@@ -98,7 +98,7 @@ class TestFragileInsert(unittest.TestCase):
     """
     def test_peg_arm_collision(self):
         info, truncated, terminated, reward = self.playDemo(1)
-
+        print(reward)
         # should have failed
         assert(terminated[0])
         assert('fail' in info)
