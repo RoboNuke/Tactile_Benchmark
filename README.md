@@ -6,3 +6,11 @@ In robotics benchmarks often vision, proprioception and force-torque observation
 I argue that there is a class of problems in which the information that can be approximated from proprioception and vision does not contain **enough** information to solve a task.  These problems would require the use of force-torque data, to generate a sufficent *s* to solve a problem. 
 
 This benchmark aims to define a series of problems requiring force torque sening to solve. It is designed to emphasize working with vision modalities and unlocking the information contained in both modalities. 
+
+
+### Requirements
+Maniskill : (here)[https://maniskill.readthedocs.io/en/latest/user_guide/getting_started/installation.html]
+    Note: maniskill requires python 3.10 or greater to run
+
+    conda create -n "myenv" python=3.10.0
+    
