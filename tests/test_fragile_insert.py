@@ -65,6 +65,7 @@ class TestFragileInsert(unittest.TestCase):
         truncated = None
         reward = None
         for t, a in enumerate(ori_actions):
+            
             sa = torch.tensor([a for k in range(self.num_envs)])
             _, reward, terminated, truncated, info = self.env.step(sa)
             #print(obs)
@@ -77,7 +78,8 @@ class TestFragileInsert(unittest.TestCase):
 
         # Cleanup
         #self.env.close()
-        print("final max force:", info['max_force'])
+        print("Final info:\n", info)
+
         return info, truncated, terminated, reward
 
     """def setUp(self):
@@ -95,25 +97,25 @@ class TestFragileInsert(unittest.TestCase):
         self.obs, _ = self.env.reset()
     """
     def test_peg_arm_collision(self):
-        info, truncated, terminated, reward = self.playDemo(0)
+        info, truncated, terminated, reward = self.playDemo(1)
 
         # should have failed
         assert(terminated[0])
         assert('fail' in info)
         assert(info['fail'][0] == True)
-        assert(info['fail_cause'][0] == 2)
+        assert(info['fail_cause'][0] == 1)
         assert(reward[0] == self.fail_reward)
-
+    
     
     def test_peg_hole_collision(self):
-        info, truncated, terminated, reward = self.playDemo(1)
+        info, truncated, terminated, reward = self.playDemo(0)
         # should have failed
         assert(terminated[0])
         assert('fail' in info)
         assert(info['fail'][0] == True)
         assert(info['fail_cause'][0] == 2)
         assert(reward[0] == self.fail_reward)
-
+    
     """
         next_obs, reward, terminations, truncations, infos = self.env.step(self.env.action_space.sample())
         print(terminations, truncations)

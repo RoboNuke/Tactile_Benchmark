@@ -14,7 +14,7 @@ class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 35.0
     def __init__(self, **kwargs):
         super().__init__(**kwargs) 
-    
+
     def _load_scene(self, options: dict):
         super()._load_scene(options)
         self.obsticles = [
@@ -25,9 +25,7 @@ class FragilePegInsert(PegInsertionSideEnv):
 
     def evaluate(self):
         out_dic = super().evaluate()
-        out_dic['fail'], out_dic['max_force'] = self.pegBroke()
-        out_dic['fail_cause'] = 2 * out_dic['fail']
-
+        out_dic['fail'], out_dic['max_force'], out_dic['fail_cause'] = self.pegBroke()
         return out_dic
     
     def getPegForce(self, object: Actor):
@@ -41,13 +39,19 @@ class FragilePegInsert(PegInsertionSideEnv):
     def pegBroke(self):
         """ Calculates the maximum force on the peg and returns it """
         max_forces = torch.zeros((self.num_envs), device=self.device)
-        all_forces = torch.zeros((len(self.obsticles)))
-        #print(self.scene.sub_scenes[0].get_contacts())
+        resp_actor = torch.zeros((self.num_envs), device=self.device)
+        #print(f"Net Peg forces: {torch.linalg.norm(self.peg.get_net_contact_forces())}")
+        #print(f"Net Box: {self.box.get_net_contact_forces()}")
         for i, obs in enumerate(self.obsticles):
             obs_forces = self.getPegForce(obs)
-            all_forces[i] = obs_forces[0]
+            update = obs_forces > max_forces
+            idx = 1 # robot
+            if i == 2:
+                idx = 2 # box
+                #print("\tForce on box:", obs_forces)
+            resp_actor += idx * update - update * resp_actor   
             max_forces = torch.maximum( max_forces, obs_forces)
-        #print(all_forces)
+            
         brokeFlag = self.maximum_peg_force <= max_forces
-        return brokeFlag, max_forces
+        return brokeFlag, max_forces, resp_actor
 
