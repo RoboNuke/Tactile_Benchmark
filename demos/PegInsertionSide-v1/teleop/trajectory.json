@@ -1,0 +1,39 @@
+{
+  "env_info": {
+    "env_id": "PegInsertionSide-v1",
+    "env_kwargs": {
+      "obs_mode": "none",
+      "control_mode": "pd_joint_pos",
+      "render_mode": "rgb_array",
+      "reward_mode": "sparse"
+    },
+    "max_episode_steps": 100
+  },
+  "commit_info": null,
+  "episodes": [
+    {
+      "episode_id": 0,
+      "episode_seed": 0,
+      "control_mode": "pd_joint_pos",
+      "elapsed_steps": 181,
+      "reset_kwargs": {
+        "options": {},
+        "seed": 0
+      },
+      "success": false
+    },
+    {
+      "episode_id": 1,
+      "episode_seed": 1,
+      "control_mode": "pd_joint_pos",
+      "elapsed_steps": 137,
+      "reset_kwargs": {
+        "options": {},
+        "seed": 1
+      },
+      "success": false
+    }
+  ],
+  "source_type": "teleoperation",
+  "source_desc": "teleoperation via the click+drag system"
+}
