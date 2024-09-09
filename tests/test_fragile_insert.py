@@ -27,13 +27,15 @@ class TestFragileInsert(unittest.TestCase):
         cls.env_info = cls.json_data["env_info"]
         cls.env_id = 'FragilePegInsert-v1'
         cls.env_kwargs = cls.env_info["env_kwargs"]
+        cls.num_envs = 2
+        cls.env = gym.make(cls.env_id, num_envs=cls.num_envs, 
+                            sim_backend="gpu",
+                            #parallel_in_single_scene=True,
+                            **cls.env_kwargs)
 
 
         
     def playDemo(self, idx):
-        self.env = gym.make(self.env_id, num_envs=1, 
-                            sim_backend="cpu",
-                            **self.env_kwargs)
 
         ep = self.json_data['episodes'][idx]
         
@@ -63,15 +65,22 @@ class TestFragileInsert(unittest.TestCase):
         truncated = None
         reward = None
         for t, a in enumerate(ori_actions):
-            _, reward, terminated, truncated, info = self.env.step(a)
+            sa = torch.tensor([a for k in range(self.num_envs)])
+            _, reward, terminated, truncated, info = self.env.step(sa)
+            #print(obs)
             self.env.base_env.set_state_dict(ori_env_states[t])
-            #self.env.base_env.render_human()
+            self.env.base_env.render_human()
+            #print(info['max_force'])
+            #print(terminated)
+            if terminated[0]: # running the same action so shoudl be same
+                break
 
         # Cleanup
-        self.env.close()
+        #self.env.close()
+        print("final max force:", info['max_force'])
         return info, truncated, terminated, reward
 
-    def setUp(self):
+    """def setUp(self):
         # create maniskill env
         self.env = gym.make(
             "FragilePegInsert-v1", # there are more tasks e.g. "PushCube-v1", "PegInsertionSide-v1", ...
@@ -84,16 +93,16 @@ class TestFragileInsert(unittest.TestCase):
             robot_uids="panda_wristcam"
         )
         self.obs, _ = self.env.reset()
-
-    def test_peg_table_collision(self):
+    """
+    def test_peg_arm_collision(self):
         info, truncated, terminated, reward = self.playDemo(0)
 
         # should have failed
         assert(terminated[0])
         assert('fail' in info)
-        assert(info['fail'] == True)
-        assert(info['fail_cause'] == 'peg_broke')
-        assert(reward == self.fail_reward)
+        assert(info['fail'][0] == True)
+        assert(info['fail_cause'][0] == 2)
+        assert(reward[0] == self.fail_reward)
 
     
     def test_peg_hole_collision(self):
@@ -101,9 +110,9 @@ class TestFragileInsert(unittest.TestCase):
         # should have failed
         assert(terminated[0])
         assert('fail' in info)
-        assert(info['fail'] == True)
-        assert(info['fail_cause'] == 'peg_broke')
-        assert(reward == self.fail_reward)
+        assert(info['fail'][0] == True)
+        assert(info['fail_cause'][0] == 2)
+        assert(reward[0] == self.fail_reward)
 
     """
         next_obs, reward, terminations, truncations, infos = self.env.step(self.env.action_space.sample())
