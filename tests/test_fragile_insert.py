@@ -28,7 +28,7 @@ class TestFragileInsert(unittest.TestCase):
         cls.env_info = cls.json_data["env_info"]
         cls.env_id = 'FragilePegInsert-v1'
         cls.env_kwargs = cls.env_info["env_kwargs"]
-        cls.num_envs = 2
+        cls.num_envs = 1
         #cls.env = gym.make(cls.env_id, num_envs=cls.num_envs, 
         #                    sim_backend="gpu",
         #                    #parallel_in_single_scene=True,
