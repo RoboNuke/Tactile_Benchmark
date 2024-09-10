@@ -28,14 +28,14 @@ class TestFragileInsert(unittest.TestCase):
         cls.env_id = 'FragilePegInsert-v1'
         cls.env_kwargs = cls.env_info["env_kwargs"]
         cls.num_envs = 2
-        cls.env = gym.make(cls.env_id, num_envs=cls.num_envs, 
-                            sim_backend="gpu",
-                            #parallel_in_single_scene=True,
-                            **cls.env_kwargs)
+        #cls.env = gym.make(cls.env_id, num_envs=cls.num_envs, 
+        #                    sim_backend="gpu",
+        #                    #parallel_in_single_scene=True,
+        #                    **cls.env_kwargs)
 
 
         
-    def playDemo(self, idx):
+    def playDemo(self, idx, reward_mode='sparse'):
 
         ep = self.json_data['episodes'][idx]
         
@@ -45,9 +45,15 @@ class TestFragileInsert(unittest.TestCase):
         else:
             reset_kwargs["seed"] = ep["episode_seed"]
         seed = reset_kwargs.pop("seed")
-            
+        self.env_kwargs['reward_mode'] = reward_mode
+        self.env = gym.make(self.env_id, 
+                            num_envs=self.num_envs, 
+                            sim_backend="gpu",
+                            #parallel_in_single_scene=True,
+                            **self.env_kwargs)
         self.env.reset(seed=seed, **reset_kwargs)
-
+        #self.env.reward_mode = reward_mode
+        #print(self.env.reward_mode)
         # set first environment state and update recorded env state
         ori_env_states = trajectory_utils.dict_to_list_of_dicts(
             self.h5_file[f"traj_{idx}"]["env_states"]
@@ -68,18 +74,12 @@ class TestFragileInsert(unittest.TestCase):
             
             sa = torch.tensor([a for k in range(self.num_envs)])
             _, reward, terminated, truncated, info = self.env.step(sa)
-            #print(obs)
             self.env.base_env.set_state_dict(ori_env_states[t])
             self.env.base_env.render_human()
-            #print(info['max_force'])
-            #print(terminated)
             if terminated[0]: # running the same action so shoudl be same
                 break
 
-        # Cleanup
-        #self.env.close()
-        print("Final info:\n", info)
-
+        self.env.close()
         return info, truncated, terminated, reward
 
     """def setUp(self):
@@ -98,7 +98,6 @@ class TestFragileInsert(unittest.TestCase):
     """
     def test_peg_arm_collision(self):
         info, truncated, terminated, reward = self.playDemo(1)
-        print(reward)
         # should have failed
         assert(terminated[0])
         assert('fail' in info)
@@ -115,7 +114,13 @@ class TestFragileInsert(unittest.TestCase):
         assert(info['fail'][0] == True)
         assert(info['fail_cause'][0] == 2)
         assert(reward[0] == self.fail_reward)
-    
+
+    def test_dense_reward(self):
+        info, truncated, terminated, reward = self.playDemo(1, reward_mode='dense')
+        assert(reward[0] == -10)
+
+if __name__ == "__main__":
+    unittest.main()
     """
         next_obs, reward, terminations, truncations, infos = self.env.step(self.env.action_space.sample())
         print(terminations, truncations)

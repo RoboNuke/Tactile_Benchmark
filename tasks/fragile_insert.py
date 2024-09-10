@@ -6,7 +6,7 @@ import numpy as np
 from mani_skill.utils.scene_builder.table import TableSceneBuilder
 from mani_skill.utils.structs import Actor, Pose
 from mani_skill.utils import common, sapien_utils
-
+from typing import Any, Dict, Union
 from mani_skill.utils.structs.actor import Actor
 
 @register_env("FragilePegInsert-v1", max_episode_steps=150)
@@ -51,7 +51,15 @@ class FragilePegInsert(PegInsertionSideEnv):
                 #print("\tForce on box:", obs_forces)
             resp_actor += idx * update - update * resp_actor   
             max_forces = torch.maximum( max_forces, obs_forces)
-            
+
         brokeFlag = self.maximum_peg_force <= max_forces
         return brokeFlag, max_forces, resp_actor
 
+    def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
+        #print("Computing dense reward")
+        r = super().compute_dense_reward(obs, action, info)
+        r *= torch.logical_not(info['fail']) # zero out all failed cases
+        r -= 10 * info['fail'] # make them all -10!
+        #print("dense reward:", r[0])
+        return r
+        
