@@ -53,43 +53,42 @@ class ScrapBarnicleEnv(BaseEnv):
     BARNICLE_FRICTION: float
     def __init__(self, *args, 
                  robot_uids="panda", 
-                 robot_init_qpos_noise=0.02, 
                  dmg_table_force = 25.0,  
                  barnicle_friction = 1000.0, 
                  obs_mode= 'state',
                  **kwargs):
-        self.robot_init_qpos_noise = robot_init_qpos_noise
+        
         if not obs_mode in self.SUPPORTED_OBS_MODES:
             raise NotImplementedError(obs_mode)
+        self.return_force_data = True
         if 'no_ft' in obs_mode:
             self.return_force_data = False
             obs_mode=obs_mode[:-6]
-        self.return_force_data = True
+
         super().__init__(*args, obs_mode=obs_mode, robot_uids=robot_uids, **kwargs)
+
+
         self.FORCE_DMG_TABLE = dmg_table_force
         self.BARNICLE_FRICTION = barnicle_friction
 
-        self.barnicles = []
         self.max_table_force = torch.zeros(self.num_envs)
     
+
     @property
     def _default_sensor_configs(self):
-        pose = sapien_utils.look_at([0, -0.3, 0.2], [0, 0, 0.1])
+        pose = sapien_utils.look_at(eye=[0.3, 0, 0.6], target=[-0.1, 0, 0.1])
         return [CameraConfig("base_camera", pose, 128, 128, np.pi / 2, 0.01, 100)]
 
     @property
     def _default_human_render_camera_configs(self):
-        pose = sapien_utils.look_at([0.5, -0.5, 0.8], [0.05, -0.1, 0.4])
+        pose = sapien_utils.look_at([0.6, 0.7, 0.6], [0.0, 0.0, 0.35])
         return CameraConfig("render_camera", pose, 512, 512, 1, 0.01, 100)
 
     
     def _load_scene(self, options: dict):
         self.table_scene = TableSceneBuilder(self)
         self.table_scene.build()
-        #self.table_scene = TableSceneBuilder(
-        #    self, robot_init_qpos_noise=self.robot_init_qpos_noise
-        #)
-        #self.table_scene.build()
+        
 
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         with torch.device(self.device):

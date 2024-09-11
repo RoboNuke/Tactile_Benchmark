@@ -57,13 +57,14 @@ class TestBarnicleScrap(unittest.TestCase):
     def test_scene_load(self):
         self.set_envs()
         self.envs.reset()
+        """
         self.envs.base_env.render_human()
         self.envs.reset()
         for i in range(100):
             self.envs.step(self.envs.action_space.sample())
             self.envs.base_env.render_human()
             time.sleep(0.1)
-        
+        """
         # check for barnicle location + friction
         for i in range(len(self.envs.barnicles)-2):
             l_barn = self.env.barnicles[i]
