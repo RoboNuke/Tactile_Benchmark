@@ -84,16 +84,35 @@ class ScrapBarnicleEnv(BaseEnv):
 
     
     def _load_scene(self, options: dict):
-        pass
-        #self.table_scene = TableSceneBuilder(self)
-        #self.table_scene.build()
+        self.table_scene = TableSceneBuilder(self)
+        self.table_scene.build()
         #self.table_scene = TableSceneBuilder(
         #    self, robot_init_qpos_noise=self.robot_init_qpos_noise
         #)
         #self.table_scene.build()
 
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
-        pass
+        with torch.device(self.device):
+            b = len(env_idx)
+            self.table_scene.initialize(env_idx)
+            # Initialize the robot
+            qpos = np.array(
+                [
+                    0.0,
+                    np.pi / 8,
+                    0,
+                    -np.pi * 5 / 8,
+                    0,
+                    np.pi * 3 / 4,
+                    -np.pi / 4,
+                    0.04,
+                    0.04,
+                ]
+            )
+            qpos = self._episode_rng.normal(0, 0.02, (b, len(qpos))) + qpos
+            qpos[:, -2:] = 0.04
+            self.agent.robot.set_qpos(qpos)
+            self.agent.robot.set_pose(sapien.Pose([-0.615, 0, 0]))
 
     def evaluate(self):
         """ Returns info with:
