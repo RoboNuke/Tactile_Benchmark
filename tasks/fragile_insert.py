@@ -28,6 +28,8 @@ class FragilePegInsert(PegInsertionSideEnv):
         print(
             #torch.linalg.norm(self.scene.get_pairwise_contact_forces(self.peg, self.box), axis=1)
             self.scene.get_pairwise_contact_forces(self.peg, self.box)
+            #print(self.box),
+            #print(self.peg)
         )
         return dict(success=success, peg_head_pos_at_hole=peg_head_pos_at_hole)
         #out_dic = super().evaluate()

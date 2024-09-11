@@ -27,8 +27,9 @@ class TestFragileInsert(unittest.TestCase):
 
         cls.env_info = cls.json_data["env_info"]
         cls.env_id = 'FragilePegInsert-v1'
+        #cls.env_id = "PegInsertionSide-v1"
         cls.env_kwargs = cls.env_info["env_kwargs"]
-        cls.num_envs = 1
+        cls.num_envs = 2
         #cls.env = gym.make(cls.env_id, num_envs=cls.num_envs, 
         #                    sim_backend="gpu",
         #                    #parallel_in_single_scene=True,
@@ -75,7 +76,10 @@ class TestFragileInsert(unittest.TestCase):
             
             sa = torch.tensor([a for k in range(self.num_envs)])
             _, reward, terminated, truncated, info = self.env.step(sa)
-            self.env.base_env.set_state_dict(ori_env_states[t])
+            print(
+                self.env.scene.get_pairwise_contact_forces(self.env.peg, self.env.box)
+            )
+            #self.env.base_env.set_state_dict(ori_env_states[t])
             self.env.base_env.render_human()
             if terminated[0]: # running the same action so shoudl be same
                 break
