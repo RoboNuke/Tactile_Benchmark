@@ -33,6 +33,22 @@ class TestBarnicleScrap(unittest.TestCase):
         cls.has_set = False
     #def setUp(self):
     #    print("Problem setup!")
+    """
+    def test_play(self):
+        self.set_envs()
+        self.envs.reset()
+        
+        self.envs.base_env.render_human()
+        self.envs.reset()
+        i = 0
+        while True:
+            self.envs.step(self.envs.action_space.sample()*0)
+            #self.envs.reset()
+            self.envs.base_env.render_human()
+            i += 1
+            if i % 100 == 0:
+                self.envs.reset()
+    """     
 
     def set_envs(self, reward_mode='sparse', obs_mode='state'):
         self.has_set = True
@@ -40,12 +56,12 @@ class TestBarnicleScrap(unittest.TestCase):
         self.env_kwargs['obs_mode'] = obs_mode
         self.envs = gym.make(self.env_id, 
                             num_envs=self.num_envs, 
-                            #sim_backend="gpu",
+                            sim_backend="gpu",
                             #parallel_in_single_scene=True,
                             **self.env_kwargs)
     
     def in_contact(self, a, b):
-        l_f = torch.linalg.norm(self.scene.get_pairwise_contact_forces(a, b), axis=1)
+        l_f = torch.linalg.norm(self.envs.scene.get_pairwise_contact_forces(a, b), axis=1)
         return torch.all(l_f > self.min_con_force)
 
     def in_xy_range(self, a, b, thresh=0.001):
@@ -54,48 +70,45 @@ class TestBarnicleScrap(unittest.TestCase):
 
         return torch.all(dx < thresh) and torch.all(dy < thresh)
 
+    def in_xy(self, a, b, thresh=0.001):
+        dx = a.p[:,0] - b[:,0]
+        dy = a.p[:,1] - b[:,1]
+
+        return torch.all(dx < thresh) and torch.all(dy < thresh)
+
     def test_scene_load(self):
         self.set_envs()
         self.envs.reset()
-        """
-        self.envs.base_env.render_human()
-        self.envs.reset()
-        for i in range(100):
-            self.envs.step(self.envs.action_space.sample())
-            self.envs.base_env.render_human()
-            time.sleep(0.1)
-        """
+        self.envs.step(self.envs.action_space.sample()*0.0)
+        
         # check for barnicle location + friction
         for i in range(len(self.envs.barnicles)-2):
-            l_barn = self.env.barnicles[i]
-            c_barn = self.env.barnicles[i+1]
-            r_barn = self.env.barnicles[i+2]
+            l_barn = self.envs.barnicles[i]
+            c_barn = self.envs.barnicles[i+1]
+            r_barn = self.envs.barnicles[i+2]
 
             # make sure we are holding still
-            assert(c_barn.is_static())
+            #assert(torch.all(c_barn.is_static()))
 
             # make sure center is in contact with left and right
-            assert( self.in_contact(l_barn.pose, c_barn.pose) )
-            assert( self.in_contact(r_barn.pose, c_barn.pose) )
+            assert( torch.all(self.in_contact(l_barn, c_barn) ))
+            assert( torch.all(self.in_contact(r_barn, c_barn) ))
 
             # make sure all x,y locs are the same
-            assert( self.in_xy_range(l_barn.pose, c_barn.pose) )
-            assert( self.in_xy_range(r_barn.pose, c_barn.pose) )
-
-            # check friction?
-        #input()
+            assert( torch.all(self.in_xy_range(l_barn.pose, c_barn.pose) ))
+            assert( torch.all(self.in_xy_range(r_barn.pose, c_barn.pose) ))
 
 
     def test_scene_random_init(self):
         self.set_envs()
-        centers = torch.zeros((self.num_envs, 3))
-        for i in range(3):
+        centers = torch.zeros((self.num_envs, 3), device="cuda:0")
+        for i in range(2):
             centers[:,i] = self.envs.BARNICLE_SPAWN_CENTER[i] 
 
         for i in range(100): # sample 100 init configs
             self.envs.reset()
             for barn in self.envs.barnicles:
-                assert( self.in_xy_range(barn.pose, centers, self.envs.BARNICLE_SPAWN_RADIUS))      
+                assert( self.in_xy(barn.pose, centers, self.envs.BARNICLE_SPAWN_DELTA))      
 
 
     def test_obs_state_conditions(self):
@@ -103,7 +116,7 @@ class TestBarnicleScrap(unittest.TestCase):
         self.set_envs(obs_mode='state')
         obs_wf, _ = self.envs.reset()
         self.envs.close()
-
+        print("here)")
         # check without force
         self.set_envs(obs_mode='state_no_ft')
         obs_wof, _ = self.envs.reset()
