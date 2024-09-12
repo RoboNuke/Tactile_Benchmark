@@ -230,6 +230,7 @@ class ScrapBarnicleEnv(BaseEnv):
             self.barnicle_hs = self.barnicle_hs.to(device=self.device)
             
             for i, barns in enumerate(self.barnicles):
+                print(i)
                 pos[:,2] = h_offsets + self.barnicle_hs * self.BARNICLE_HEIGHT_FRAC[i]/2.0
                 barns.set_pose(Pose.create_from_pq(pos, quat))
                 h_offsets += self.barnicle_hs * self.BARNICLE_HEIGHT_FRAC[i]
