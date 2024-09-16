@@ -12,7 +12,7 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 class NatureCNN(nn.Module):
-    def __init__(self, sample_obs):
+    def __init__(self, sample_obs, force_type="FFN"):
         super().__init__()
 
         extractors = {}
@@ -58,13 +58,24 @@ class NatureCNN(nn.Module):
             extractors["state"] = nn.Linear(state_size, 256)
             self.out_features += 256
 
+        if "force" in sample_obs['extra']:
+            if force_type == "FNN":
+                force_size = sample_obs["extra"]['force'].shape[-1]
+                extractors["force"] = nn.Linear(force_size, 256)
+                self.out_features += 256
+            elif force_type == "1D-CNN":
+                raise NotImplementedError
+            
         self.extractors = nn.ModuleDict(extractors)
 
     def forward(self, observations) -> torch.Tensor:
         encoded_tensor_list = []
         # self.extractors contain nn.Modules that do all the processing.
         for key, extractor in self.extractors.items():
-            obs = observations[key]
+            if key == 'force':
+                obs = observations['extra'][key]
+            else:
+                obs = observations[key]
             if key == "rgb":
                 obs = obs.float().permute(0,3,1,2)
                 obs = obs / 255

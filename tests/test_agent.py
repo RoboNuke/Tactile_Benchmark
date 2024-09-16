@@ -3,7 +3,7 @@ from tasks.wiping import *
 from tasks.barnicle_scrap import *
 from learning.agent import *
 
-class TestWiping(unittest.TestCase):
+class TestAgent(unittest.TestCase):
     #@classmethod
     #def setUpClass(cls):
     #    pass
@@ -35,17 +35,7 @@ class TestWiping(unittest.TestCase):
     def test_ppih_obs_space(self):
         assert(1==1)
 
-    # following tests will be done later
-    """
-
-    def test_delta_action_space(self):
+    def test_1D_CNN_extractor(self):
         assert(1==1)
-
-    def test_hybrid_action_space(self):
-        assert(1==1)
-
-    def test_ffcc_action_space(self):
-        assert(1==1)
-    
-    """
+        
     
