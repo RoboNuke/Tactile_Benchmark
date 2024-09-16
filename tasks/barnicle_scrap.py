@@ -24,8 +24,6 @@ from mani_skill.envs.utils.observations import (
     sensor_data_to_pointcloud,
 )
 
-from mani_skill.utils.scene_builder.table import TableSceneBuilder
-
 
 @register_env("ScrapBarnicle-v1", max_episode_steps=50)
 class ScrapBarnicleEnv(BaseEnv):
@@ -383,7 +381,7 @@ class ScrapBarnicleEnv(BaseEnv):
             - reaching (dist to barnicle) max: 0-1
             - number of barnicles attached max: 0-1
             - current force on table: max: 0-1 1 => no force 0 => >max force
-            total max reward: 4 
+            total max reward: 3 
         """
         r = torch.zeros((self.num_envs), dtype=torch.float32, device=self.device)
 

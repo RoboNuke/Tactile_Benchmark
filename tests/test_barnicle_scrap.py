@@ -34,7 +34,7 @@ class TestBarnicleScrap(unittest.TestCase):
     #def setUp(self):
     #    print("Problem setup!")
     
-    """def test_play(self):
+    def test_play(self):
         self.set_envs()
         self.envs.reset()
         
@@ -46,9 +46,9 @@ class TestBarnicleScrap(unittest.TestCase):
             #self.envs.reset()
             self.envs.base_env.render_human()
             i += 1
-            if i % 100 == 0:
+            if i % 10 == 0:
                 self.envs.reset()
-    """
+    
 
     def set_envs(self, reward_mode='sparse', obs_mode='state'):
         self.has_set = True
