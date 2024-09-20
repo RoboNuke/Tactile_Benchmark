@@ -75,8 +75,6 @@ class ScrapBarnicleEnv(BaseEnv):
                  obs_mode= 'state',
                  **kwargs):
         
-        if not obs_mode in self.SUPPORTED_OBS_MODES:
-            raise NotImplementedError(obs_mode)
         self.return_force_data = True
         if 'no_ft' in obs_mode:
             self.return_force_data = False

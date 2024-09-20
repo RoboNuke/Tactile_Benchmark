@@ -3,9 +3,69 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions.normal import Normal
+from typing import Dict
+
+import gymnasium as gym
+from mani_skill.envs.sapien_env import BaseEnv
+from mani_skill.utils import common
 
 import numpy as np
+class FlattenRGBDFTObservationWrapper(gym.ObservationWrapper):
+    """
+    Flattens the rgbd mode observations into a dictionary with three keys, "rgbd" and "state"
 
+    Args:
+        rgb (bool): Whether to include rgb images in the observation
+        depth (bool): Whether to include depth images in the observation
+        state (bool): Whether to include state data in the observation
+        force (bool): Whether to include force data in the observation
+
+    Note that the returned observations will have a "rgbd" or "rgb" or "depth" key depending on the rgb/depth bool flags.
+    """
+
+    def __init__(self, env, rgb=True, depth=True, state=True, force=True) -> None:
+        self.base_env: BaseEnv = env.unwrapped
+        super().__init__(env)
+        self.include_rgb = rgb
+        self.include_depth = depth
+        self.include_state = state
+        self.include_force = force
+        new_obs = self.observation(self.base_env._init_raw_obs)
+        self.base_env.update_obs_space(new_obs)
+
+    def observation(self, observation: Dict):
+        if 'sensor_param' in observation:
+            del observation["sensor_param"]
+
+        if 'sensor_data' in observation:
+            sensor_data = observation.pop("sensor_data")
+            images = []
+            for cam_data in sensor_data.values():
+                if self.include_rgb:
+                    images.append(cam_data["rgb"])
+                if self.include_depth:
+                    images.append(cam_data["depth"])
+            if self.include_depth or self.include_rgb:
+                images = torch.concat(images, axis=-1)
+
+        # flatten the rest of the data which should just be state data
+        ret = dict()
+        if 'force' in observation['extra']:
+            force = observation['extra'].pop('force')
+        observation = common.flatten_state_dict(observation, use_torch=True)
+
+        if self.include_state:
+            ret["state"] = observation
+        if self.include_force:
+            ret['force'] = force
+        if self.include_rgb and not self.include_depth:
+            ret["rgb"] = images
+        elif self.include_rgb and self.include_depth:
+            ret["rgbd"] = images
+        elif self.include_depth and not self.include_rgb:
+            ret["depth"] = images
+        return ret
+    
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
     torch.nn.init.constant_(layer.bias, bias_const)
@@ -16,10 +76,10 @@ class NatureCNN(nn.Module):
         super().__init__()
 
         extractors = {}
-
+        self.out_features = 0
+        feature_size = 256
+        
         if 'rgb' in sample_obs:
-            self.out_features = 0
-            feature_size = 256
             in_channels=sample_obs["rgb"].shape[-1]
             image_size=(sample_obs["rgb"].shape[1], sample_obs["rgb"].shape[2])
 
@@ -51,6 +111,8 @@ class NatureCNN(nn.Module):
                 fc = nn.Sequential(nn.Linear(n_flatten, feature_size), nn.ReLU())
             extractors["rgb"] = nn.Sequential(cnn, fc)
             self.out_features += feature_size
+            
+
 
         if "state" in sample_obs:
             # for state data we simply pass it through a single linear layer
@@ -58,12 +120,14 @@ class NatureCNN(nn.Module):
             extractors["state"] = nn.Linear(state_size, 256)
             self.out_features += 256
 
-        if "force" in sample_obs['extra']:
+        if "force" in sample_obs:
             if force_type == "FNN":
-                force_size = sample_obs["extra"]['force'].shape[-1]
+                force_size = sample_obs['force'].shape[-1]
                 extractors["force"] = nn.Linear(force_size, 256)
                 self.out_features += 256
             elif force_type == "1D-CNN":
+                raise NotImplementedError
+            else:
                 raise NotImplementedError
             
         self.extractors = nn.ModuleDict(extractors)
@@ -72,10 +136,7 @@ class NatureCNN(nn.Module):
         encoded_tensor_list = []
         # self.extractors contain nn.Modules that do all the processing.
         for key, extractor in self.extractors.items():
-            if key == 'force':
-                obs = observations['extra'][key]
-            else:
-                obs = observations[key]
+            obs = observations[key]
             if key == "rgb":
                 obs = obs.float().permute(0,3,1,2)
                 obs = obs / 255

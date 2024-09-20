@@ -12,8 +12,15 @@ from mani_skill.utils.structs.actor import Actor
 @register_env("FragilePegInsert-v1", max_episode_steps=150)
 class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 35.0
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs) 
+    SUPPORTED_ROBOTS = ["panda", "fetch"]
+    def __init__(self, *args, obs_mode='state', **kwargs):
+        # handle the ft stuff
+        self.return_force_data = True
+        if 'no_ft' in obs_mode:
+            self.return_force_data = False
+            obs_mode=obs_mode[:-6]
+
+        super().__init__(*args, obs_mode=obs_mode, **kwargs)
 
     def _load_scene(self, options: dict):
         super()._load_scene(options)
@@ -25,17 +32,27 @@ class FragilePegInsert(PegInsertionSideEnv):
 
     def evaluate(self):
         success, peg_head_pos_at_hole = self.has_peg_inserted()
-        print(
+        #print(
             #torch.linalg.norm(self.scene.get_pairwise_contact_forces(self.peg, self.box), axis=1)
-            self.scene.get_pairwise_contact_forces(self.peg, self.box)
+        #    self.scene.get_pairwise_contact_forces(self.peg, self.box)
             #print(self.box),
             #print(self.peg)
-        )
+        #)
         return dict(success=success, peg_head_pos_at_hole=peg_head_pos_at_hole)
         #out_dic = super().evaluate()
         #out_dic['fail'], out_dic['max_force'], out_dic['fail_cause'] = self.pegBroke()
         #return out_dic
     
+    def _get_obs_extra(self, info: Dict):
+        """ 
+            Adds force-torque if no_ft not in obs_mode
+            handles state calculations
+        """
+        data = super()._get_obs_extra(info)
+
+        if self.return_force_data:
+            data['force'] = self.agent.tcp.get_net_contact_forces()
+        return data
     def getPegForce(self, object: Actor):
 
         contact_force = self.scene.get_pairwise_contact_forces(
