@@ -381,7 +381,7 @@ if __name__ == "__main__":
                 mean = torch.stack(v).float().mean()
                 print(f"eval_{k}_mean={mean}")
                 logger.add_scalar({f'eval/{k}':mean}, step=global_step)
-            assert(0==1)
+            #assert(0==1)
             
             if args.capture_video:
                 print(f"Saving Video at {global_step}")
