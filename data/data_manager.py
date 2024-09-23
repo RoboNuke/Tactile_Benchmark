@@ -31,7 +31,8 @@ class DataManager():
     
     def init_new_run(self, 
                      run_name, 
-                     config
+                     config,
+                     tags = []
         ):
         """
             Start a new run with tags in config
@@ -39,14 +40,17 @@ class DataManager():
         wandb.init(entity=self.entity,
                    project=self.project,
                    name=run_name,
-                   config=config)
+                   config=config,
+                   tags = tags)
         self.run_name = run_name
 
     def add_scalar(self, 
                    data, 
                    step=None, 
-                   commit=True
+                   commit=False
         ):
+        if step is not None:
+            commit = False
         wandb.log(data, step=step, commit=commit)
 
     def add_gif(self, 
@@ -65,17 +69,45 @@ class DataManager():
                         format='gif'
                     )
             }, step=step, commit=commit)
+        
+    def add_mp4(self, 
+                data_or_path, 
+                tag = 'gif',
+                step=None, 
+                cap="my mp4", 
+                fps=10
+        ):
+        wandb.log({
+            tag:wandb.Video(
+                        data_or_path=data_or_path,
+                        caption=cap,
+                        fps=fps,
+                        format='mp4'
+                    )
+            }, step=step)
 
-    def add_ckpt(self, ckpt_path, name):
+    def add_ckpt(self, ckpt_path, wandb_path):
         """
             Save model parameters
+            - ckpt_path: path on local files
+            - wandb path: location to save it to
         """
         # set up a ckpt folder and artifact logger
-        self.ckpt_art = wandb.Artifact(name=f"{self.run_name}_ckpts",
-                                        type='ckpt')
-        self.ckpt_art.add_file(local_path= ckpt_path,
-                               name=name)
-        self.ckpt_art.save()
+        #self.ckpt_art = wandb.Artifact(name=f"{self.run_name}_ckpts",
+        #                                type='ckpt')
+        #self.ckpt_art.add_file(local_path= ckpt_path,
+        #                       name=name)
+        #self.ckpt_art.save()
+        
+    def get_dir(self):
+        return wandb.run.dir
+    
+    def add_save(self, con, base_path=None):
+        print(con)
+        if base_path == None:
+            wandb.save(con)
+        else:
+            wandb.save(con, base_path=base_path)
 
     def finish(self, quiet=True, exit_code=0):
         """

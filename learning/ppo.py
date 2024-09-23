@@ -15,7 +15,6 @@ import torch.nn as nn
 import torch.optim as optim
 import tyro
 from torch.distributions.normal import Normal
-from torch.utils.tensorboard import SummaryWriter
 
 # ManiSkill specific imports
 import mani_skill.envs
@@ -24,9 +23,12 @@ from mani_skill.utils.wrappers.flatten import FlattenActionSpaceWrapper, Flatten
 from mani_skill.utils.wrappers.record import RecordEpisode
 from mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 
+# hunter stuff
+from learning.agent import *
+from data.data_manager import DataManager
 @dataclass
 class Args:
-    exp_name: Optional[str] = None
+    exp_name: Optional[str] = "Test_Run"
     """the name of this experiment"""
     seed: int = 1
     """seed of the experiment"""
@@ -34,11 +36,9 @@ class Args:
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
     """if toggled, cuda will be enabled by default"""
-    track: bool = False
-    """if toggled, this experiment will be tracked with Weights and Biases"""
-    wandb_project_name: str = "ManiSkill"
+    wandb_project_name: str = "Tester"
     """the wandb's project name"""
-    wandb_entity: str = None
+    wandb_entity: str = "hur"
     """the entity (team) of wandb's project"""
     capture_video: bool = True
     """whether to capture videos of the agent performances (check out `videos` folder)"""
@@ -51,16 +51,28 @@ class Args:
     render_mode: str = "all"
     """the environment rendering mode"""
 
+    # exp specific info
+    obs_mode: str = 'rgb'
+    """the observation mode for the robot"""
+    control_mode: str = 'pd_joint_delta_pos'
+    """the action space or control mode"""
+    include_force: bool = False
+    """if the robot recieves information about force observations"""
+    force_encoding: str = 'FFN'
+    """How to encode the force information"""
+    reward_mode: str = 'normalized_dense'
+    """Reward mode to use during training"""
+
     # Algorithm specific arguments
     env_id: str = "PickCube-v1"
     """the id of the environment"""
     include_state: bool = True
     """whether to include state information in observations"""
-    total_timesteps: int = 10000000
+    total_timesteps: int = 10000
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    num_envs: int = 512
+    num_envs: int = 16
     """the number of parallel environments"""
     num_eval_envs: int = 8
     """the number of parallel evaluation environments"""
@@ -112,6 +124,52 @@ class Args:
     num_iterations: int = 0
     """the number of iterations (computed in runtime)"""
 
+class DictArray(object):
+    def __init__(self, buffer_shape, element_space, data_dict=None, device=None):
+        self.buffer_shape = buffer_shape
+        if data_dict:
+            self.data = data_dict
+        else:
+            assert isinstance(element_space, gym.spaces.dict.Dict)
+            self.data = {}
+            for k, v in element_space.items():
+                if isinstance(v, gym.spaces.dict.Dict):
+                    self.data[k] = DictArray(buffer_shape, v)
+                else:
+                    self.data[k] = torch.zeros(buffer_shape + v.shape).to(device)
+
+    def keys(self):
+        return self.data.keys()
+
+    def __getitem__(self, index):
+        if isinstance(index, str):
+            return self.data[index]
+        return {
+            k: v[index] for k, v in self.data.items()
+        }
+
+    def __setitem__(self, index, value):
+        if isinstance(index, str):
+            self.data[index] = value
+        for k, v in value.items():
+            self.data[k][index] = v
+
+    @property
+    def shape(self):
+        return self.buffer_shape
+
+    def reshape(self, shape):
+        t = len(self.buffer_shape)
+        new_dict = {}
+        for k,v in self.data.items():
+            if isinstance(v, DictArray):
+                new_dict[k] = v.reshape(shape)
+            else:
+                new_dict[k] = v.reshape(shape + v.shape[t:])
+        new_buffer_shape = next(iter(new_dict.values())).shape[:len(shape)]
+        return DictArray(new_buffer_shape, None, data_dict=new_dict)
+
+
 if __name__ == "__main__":
     args = tyro.cli(Args)
     args.batch_size = int(args.num_envs * args.num_steps)
@@ -138,6 +196,7 @@ if __name__ == "__main__":
         render_mode=args.render_mode, 
         sim_backend="gpu"
     )
+
     eval_envs = gym.make(
         args.env_id, 
         num_envs=args.num_eval_envs, 
@@ -150,54 +209,111 @@ if __name__ == "__main__":
         **env_kwargs
     )
 
-    # rgbd obs mode returns a dict of data, we flatten it so there is just a rgbd key and state key
-    envs = FlattenRGBDObservationWrapper(envs, rgb=True, depth=False, state=args.include_state)
-    eval_envs = FlattenRGBDObservationWrapper(eval_envs, rgb=True, depth=False, state=args.include_state)
-
-    if isinstance(envs.action_space, gym.spaces.Dict):
-        envs = FlattenActionSpaceWrapper(envs)
-        eval_envs = FlattenActionSpaceWrapper(eval_envs)
-    if args.capture_video:
-        eval_output_dir = f"runs/{run_name}/videos"
-        if args.evaluate:
-            eval_output_dir = f"{os.path.dirname(args.checkpoint)}/test_videos"
-        print(f"Saving eval videos to {eval_output_dir}")
-        if args.save_train_video_freq is not None:
-            save_video_trigger = lambda x : (x // args.num_steps) % args.save_train_video_freq == 0
-            envs = RecordEpisode(envs, output_dir=f"runs/{run_name}/train_videos", save_trajectory=False, save_video_trigger=save_video_trigger, max_steps_per_video=args.num_steps, video_fps=30)
-        eval_envs = RecordEpisode(eval_envs, output_dir=eval_output_dir, save_trajectory=args.evaluate, trajectory_name="trajectory", max_steps_per_video=args.num_eval_steps, video_fps=30)
-    envs = ManiSkillVectorEnv(envs, args.num_envs, ignore_terminations=not args.partial_reset, record_metrics=True)
-    eval_envs = ManiSkillVectorEnv(eval_envs, args.num_eval_envs, ignore_terminations=True, record_metrics=True)
-    assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
-
-    max_episode_steps = gym_utils.find_max_episode_steps_value(envs._env)
+    max_episode_steps = gym_utils.find_max_episode_steps_value(envs)
     logger = None
+    
     if not args.evaluate:
         print("Running training")
-        if args.track:
-            import wandb
-            config = vars(args)
-            config["env_cfg"] = dict(**env_kwargs, num_envs=args.num_envs, env_id=args.env_id, reward_mode="normalized_dense", env_horizon=max_episode_steps, partial_reset=args.partial_reset)
-            config["eval_env_cfg"] = dict(**env_kwargs, num_envs=args.num_eval_envs, env_id=args.env_id, reward_mode="normalized_dense", env_horizon=max_episode_steps, partial_reset=args.partial_reset)
-            wandb.init(
-                project=args.wandb_project_name,
-                entity=args.wandb_entity,
-                sync_tensorboard=False,
-                config=config,
-                name=run_name,
-                save_code=True,
-                group="PPO",
-                tags=["ppo", "walltime_efficient"]
-            )
-        writer = SummaryWriter(f"runs/{run_name}")
-        writer.add_text(
-            "hyperparameters",
-            "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
+        config = vars(args)
+        config["env_cfg"] = dict(
+            **env_kwargs, 
+            num_envs=args.num_envs, 
+            env_id=args.env_id, 
+            reward_mode=args.reward_mode, 
+            env_horizon=max_episode_steps, 
+            partial_reset=args.partial_reset
         )
-        logger = Logger(log_wandb=args.track, tensorboard=writer)
+        config["eval_env_cfg"] = dict(
+            **env_kwargs, 
+            num_envs=args.num_eval_envs, 
+            env_id=args.env_id, 
+            reward_mode=args.reward_mode, 
+            env_horizon=max_episode_steps, 
+            partial_reset=args.partial_reset
+        )
+        tags = [
+            args.env_id, # which problem we solving
+            args.reward_mode, 
+            "state" if args.include_state else "without_state", # did we include state information 
+            args.obs_mode, 
+            "force" if args.include_force else "without_force",
+            args.control_mode # action space 
+        ]
+
+        logger = DataManager(
+            project=args.wandb_project_name,
+            entity=args.wandb_entity)
+        
+        logger.init_new_run(
+            run_name, 
+            config,
+            tags = tags
+        )
+        if args.save_model:
+            os.makedirs(logger.get_dir() + "/ckpts")
+        assert logger is not None, "Logger didn't init"
     else:
         print("Running evaluation")
 
+    # rgbd obs mode returns a dict of data, we flatten it so there is just a rgbd key and state key
+    envs = FlattenRGBDFTObservationWrapper(
+        envs, 
+        rgb= 'rgb' in args.obs_mode, 
+        depth=False, 
+        state=args.include_state,
+        force=args.include_force
+    )
+    eval_envs = FlattenRGBDFTObservationWrapper(
+        eval_envs,  
+        rgb= 'rgb' in args.obs_mode, 
+        depth=False, 
+        state=args.include_state,
+        force=args.include_force
+    )
+
+    if args.capture_video:
+        
+        if args.evaluate:
+            eval_output_dir = f"{os.path.dirname(args.checkpoint)}/test_videos"
+        else:
+            eval_output_dir = f"{logger.get_dir()}/videos"
+        print(f"Saving eval videos to {eval_output_dir}")
+        if args.save_train_video_freq is not None:
+            save_video_trigger = lambda x : (x // args.num_steps) % args.save_train_video_freq == 0
+            envs = RecordEpisode(
+                envs, 
+                output_dir=f"{logger.get_dir()}/train_videos", 
+                save_trajectory=False, 
+                save_video_trigger=save_video_trigger, 
+                max_steps_per_video=args.num_steps, 
+                video_fps=30
+            )
+        eval_envs = RecordEpisode(
+            eval_envs, 
+            output_dir=eval_output_dir, 
+            save_trajectory=args.evaluate, 
+            trajectory_name="trajectory", 
+            max_steps_per_video=args.num_eval_steps, 
+            video_fps=30
+        )
+    
+    
+    envs = ManiSkillVectorEnv(
+        envs, 
+        args.num_envs, 
+        ignore_terminations=not args.partial_reset, 
+        record_metrics=True
+    )
+    eval_envs = ManiSkillVectorEnv(
+        eval_envs, 
+        args.num_eval_envs, 
+        ignore_terminations=True, 
+        record_metrics=True
+    )
+    
+    assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
+
+    
     # ALGO Logic: Storage setup
     obs = DictArray((args.num_steps, args.num_envs), envs.single_observation_space, device=device)
     actions = torch.zeros((args.num_steps, args.num_envs) + envs.single_action_space.shape).to(device)
@@ -219,17 +335,25 @@ if __name__ == "__main__":
     print(f"args.num_iterations={args.num_iterations} args.num_envs={args.num_envs} args.num_eval_envs={args.num_eval_envs}")
     print(f"args.minibatch_size={args.minibatch_size} args.batch_size={args.batch_size} args.update_epochs={args.update_epochs}")
     print(f"####")
-    agent = Agent(envs, sample_obs=next_obs).to(device)
+
+
+    agent = Agent(
+        envs, 
+        sample_obs=next_obs, 
+        force_type=args.force_encoding
+    ).to(device)
+
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
     if args.checkpoint:
         agent.load_state_dict(torch.load(args.checkpoint))
 
+    eval_count = 0
     for iteration in range(1, args.num_iterations + 1):
         print(f"Epoch: {iteration}, global_step={global_step}")
         final_values = torch.zeros((args.num_steps, args.num_envs), device=device)
         agent.eval()
-        if iteration % args.eval_freq == 1:
+        if iteration % args.eval_freq == 1 or iteration==args.num_iterations:
             print("Evaluating")
             eval_obs, _ = eval_envs.reset()
             eval_metrics = defaultdict(list)
@@ -240,16 +364,41 @@ if __name__ == "__main__":
                         mask = eval_infos["_final_info"]
                         for k, v in eval_infos["final_info"]["episode"].items():
                             eval_metrics[k].append(v)
+                        for k, v in eval_infos['final_info'].items():
+                            if not k == 'episode':
+                                eval_metrics[k].append(v)
+
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
+            
             for k, v in eval_metrics.items():
                 mean = torch.stack(v).float().mean()
-                logger.add_scalar(f"eval/{k}", mean, global_step)
                 print(f"eval_{k}_mean={mean}")
+                logger.add_scalar({f'eval/{k}':mean}, step=global_step)
+            
+            
+            if args.capture_video:
+                print(f"Saving Video at {global_step}")
+                if args.save_train_video_freq is not None:
+                    logger.add_save(f"train_videos/*.mp4")
+                logger.add_save("/videos/*.mp4")
+                logger.add_mp4(
+                    f'{logger.get_dir()}/videos/{eval_count}.mp4', 
+                    tag = 'eval',
+                    step= global_step, 
+                    cap=f'Evaluation after {global_step} steps', 
+                    fps=10
+                )
+                eval_count += 1
+
             if args.evaluate:
                 break
+
         if args.save_model and iteration % args.eval_freq == 1:
-            model_path = f"runs/{run_name}/ckpt_{iteration}.pt"
+            #model_path = f"runs/{run_name}/ckpt_{iteration}.pt"
+            model_path = f'{logger.get_dir()}/ckpts/ckpt_{iteration}.pt'
             torch.save(agent.state_dict(), model_path)
+            logger.add_save("ckpts/*.pt")
+            #logger.add_ckpt(model_path, f'ckpt_{iteration}.pt')
             print(f"model saved to {model_path}")
         # Annealing the rate if instructed to do so.
         if args.anneal_lr:
@@ -278,8 +427,15 @@ if __name__ == "__main__":
                 final_info = infos["final_info"]
                 done_mask = infos["_final_info"]
                 for k, v in final_info["episode"].items():
-                    logger.add_scalar(f"train/{k}", v[done_mask].float().mean(), global_step)
-
+                    logger.add_scalar(
+                        {f"train/{k}":v[done_mask].float().mean()}, 
+                        step=global_step)
+                for k, v in final_info.items():
+                    if not k == 'episode':
+                        logger.add_scalar(
+                            {f"train/{k}":v[done_mask].float().mean()}, 
+                            step=global_step
+                        )
                 for k in infos["final_observation"]:
                     infos["final_observation"][k] = infos["final_observation"][k][done_mask]
                 with torch.no_grad():
@@ -399,24 +555,30 @@ if __name__ == "__main__":
         var_y = np.var(y_true)
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
-        logger.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
-        logger.add_scalar("losses/value_loss", v_loss.item(), global_step)
-        logger.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
-        logger.add_scalar("losses/entropy", entropy_loss.item(), global_step)
-        logger.add_scalar("losses/old_approx_kl", old_approx_kl.item(), global_step)
-        logger.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
-        logger.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
-        logger.add_scalar("losses/explained_variance", explained_var, global_step)
+        logger.add_scalar(
+            {
+                "charts/learning_rate":optimizer.param_groups[0]["lr"],
+                "losses/value_loss":v_loss.item(),
+                "losses/policy_loss":pg_loss.item(),
+                "losses/entropy":entropy_loss.item(),
+                "losses/old_approx_kl":old_approx_kl.item(),
+                "losses/approx_kl":approx_kl.item(),
+                "losses/clipfrac":np.mean(clipfracs),
+                "losses/explained_variance":explained_var,
+                "charts/SPS":int(global_step / (time.time() - start_time)),
+                "time/step":global_step,
+                "time/update_time":update_time,
+                "time/rollout_time":rollout_time,
+                "time/rollout_fps":args.num_envs * args.num_steps / rollout_time
+            }, step=global_step)
         print("SPS:", int(global_step / (time.time() - start_time)))
-        logger.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
-        logger.add_scalar("time/step", global_step, global_step)
-        logger.add_scalar("time/update_time", update_time, global_step)
-        logger.add_scalar("time/rollout_time", rollout_time, global_step)
-        logger.add_scalar("time/rollout_fps", args.num_envs * args.num_steps / rollout_time, global_step)
+    
     if args.save_model and not args.evaluate:
-        model_path = f"runs/{run_name}/final_ckpt.pt"
+        #model_path = f"runs/{run_name}/final_ckpt.pt"
+        model_path = f'{logger.get_dir()}/ckpts/final_ckpt.pt'
         torch.save(agent.state_dict(), model_path)
+        logger.add_save("ckpts/*.pt")
         print(f"model saved to {model_path}")
 
     envs.close()
-    if logger is not None: logger.close()
+    if logger is not None: logger.finish()

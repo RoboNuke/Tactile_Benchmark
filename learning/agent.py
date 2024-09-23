@@ -145,9 +145,9 @@ class NatureCNN(nn.Module):
     
 
 class Agent(nn.Module):
-    def __init__(self, envs, sample_obs):
+    def __init__(self, envs, sample_obs, force_type='FFN'):
         super().__init__()
-        self.feature_net = NatureCNN(sample_obs=sample_obs)
+        self.feature_net = NatureCNN(sample_obs=sample_obs, force_type=force_type)
         
         latent_size = self.feature_net.out_features
         self.critic = nn.Sequential(
