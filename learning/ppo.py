@@ -361,18 +361,18 @@ if __name__ == "__main__":
                 with torch.no_grad():
                     eval_obs, eval_rew, eval_terminations, eval_truncations, eval_infos = eval_envs.step(agent.get_action(eval_obs, deterministic=True))
                     if "final_info" in eval_infos:
-                        print(eval_infos.keys())
+                        #print(eval_infos.keys())
                         mask = eval_infos["_final_info"]
-                        print("episode:", eval_infos['final_info']['episode'].keys())
+                        #print("episode:", eval_infos['final_info']['episode'].keys())
 
                         for k, v in eval_infos["final_info"]["episode"].items():
-                            print(k)
+                            #print(k)
                             eval_metrics[k].append(v)
-                        print(eval_infos["final_info"].keys())
-                        for k, v in eval_infos['final_info'].items():
-                            if not k == 'episode':
-                                print(k)
-                                eval_metrics[k].append(v)
+                        #print(eval_infos["final_info"].keys())
+                        #for k, v in eval_infos['final_info'].items():
+                        #    if not k == 'episode':
+                        #        print(k)
+                        #        eval_metrics[k].append(v)
 
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
             print(eval_metrics.keys())
