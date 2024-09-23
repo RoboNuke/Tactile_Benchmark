@@ -437,12 +437,12 @@ if __name__ == "__main__":
                     logger.add_scalar(
                         {f"train/{k}":v[done_mask].float().mean()}, 
                         step=global_step)
-                for k, v in final_info.items():
-                    if not k == 'episode':
-                        logger.add_scalar(
-                            {f"train/{k}":v[done_mask].float().mean()}, 
-                            step=global_step
-                        )
+                #for k, v in final_info.items():
+                #    if not k == 'episode':
+                #        logger.add_scalar(
+                #            {f"train/{k}":v[done_mask].float().mean()}, 
+                #            step=global_step
+                #        )
                 for k in infos["final_observation"]:
                     infos["final_observation"][k] = infos["final_observation"][k][done_mask]
                 with torch.no_grad():
