@@ -188,7 +188,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = args.torch_deterministic
 
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    print("Using device:", device)
+    #print("Using device:", device)
     # env setup
     env_kwargs = dict(
         obs_mode=args.obs_mode, 
@@ -277,7 +277,7 @@ if __name__ == "__main__":
             eval_output_dir = f"{os.path.dirname(args.checkpoint)}/test_videos"
         else:
             eval_output_dir = f"{logger.get_dir()}/videos"
-        print(f"Saving eval videos to {eval_output_dir}")
+        #print(f"Saving eval videos to {eval_output_dir}")
         if args.save_train_video_freq is not None:
             save_video_trigger = lambda x : (x // args.num_steps) % args.save_train_video_freq == 0
             envs = RecordEpisode(
@@ -375,7 +375,7 @@ if __name__ == "__main__":
                         #        eval_metrics[k].append(v)
 
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
-            print(eval_metrics.keys())
+            
             for k, v in eval_metrics.items():
                 #print(k,v)
                 mean = torch.stack(v).float().mean()
@@ -384,10 +384,10 @@ if __name__ == "__main__":
             #assert(0==1)
             
             if args.capture_video:
-                print(f"Saving Video at {global_step}")
+                #print(f"Saving Video at {global_step}")
                 if args.save_train_video_freq is not None:
-                    logger.add_save(f"train_videos/*.mp4")
-                logger.add_save("/videos/*.mp4")
+                    logger.add_save(f"train_videos/{eval_count}.mp4")
+                logger.add_save(f"/videos/{eval_count}.mp4")
                 logger.add_mp4(
                     f'{logger.get_dir()}/videos/{eval_count}.mp4', 
                     tag = 'eval',
@@ -395,7 +395,7 @@ if __name__ == "__main__":
                     cap=f'Evaluation after {global_step} steps', 
                     fps=10
                 )
-                eval_count += 1
+            eval_count += 1
 
             if args.evaluate:
                 break
@@ -404,9 +404,9 @@ if __name__ == "__main__":
             #model_path = f"runs/{run_name}/ckpt_{iteration}.pt"
             model_path = f'{logger.get_dir()}/ckpts/ckpt_{iteration}.pt'
             torch.save(agent.state_dict(), model_path)
-            logger.add_save("ckpts/*.pt")
+            logger.add_save(f"ckpts/ckpt_{iteration}.pt")
             #logger.add_ckpt(model_path, f'ckpt_{iteration}.pt')
-            print(f"model saved to {model_path}")
+            #print(f"model saved to {model_path}")
         # Annealing the rate if instructed to do so.
         if args.anneal_lr:
             frac = 1.0 - (iteration - 1.0) / args.num_iterations
@@ -584,8 +584,9 @@ if __name__ == "__main__":
         #model_path = f"runs/{run_name}/final_ckpt.pt"
         model_path = f'{logger.get_dir()}/ckpts/final_ckpt.pt'
         torch.save(agent.state_dict(), model_path)
-        logger.add_save("ckpts/*.pt")
-        print(f"model saved to {model_path}")
+        logger.add_save("ckpts/final_ckpt.pt")
+        #print(f"model saved to {model_path}")
 
     envs.close()
-    if logger is not None: logger.finish()
+    if logger is not None: 
+        logger.finish()
