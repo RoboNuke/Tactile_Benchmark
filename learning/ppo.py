@@ -363,18 +363,21 @@ if __name__ == "__main__":
                     if "final_info" in eval_infos:
                         mask = eval_infos["_final_info"]
                         for k, v in eval_infos["final_info"]["episode"].items():
+                            print(k)
                             eval_metrics[k].append(v)
                         for k, v in eval_infos['final_info'].items():
                             if not k == 'episode':
+                                print(k)
                                 eval_metrics[k].append(v)
 
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
-            
+            print(eval_metrics.keys())
             for k, v in eval_metrics.items():
+                #print(k,v)
                 mean = torch.stack(v).float().mean()
                 print(f"eval_{k}_mean={mean}")
                 logger.add_scalar({f'eval/{k}':mean}, step=global_step)
-            
+            assert(0==1)
             
             if args.capture_video:
                 print(f"Saving Video at {global_step}")
