@@ -103,7 +103,6 @@ class DataManager():
         return wandb.run.dir
     
     def add_save(self, con, base_path=None):
-        print(con)
         if base_path == None:
             wandb.save(con)
         else:
