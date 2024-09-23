@@ -188,7 +188,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = args.torch_deterministic
 
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-
+    print("Using device:", device)
     # env setup
     env_kwargs = dict(
         obs_mode=args.obs_mode, 
