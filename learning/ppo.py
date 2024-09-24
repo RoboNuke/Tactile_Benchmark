@@ -26,6 +26,9 @@ from mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 # hunter stuff
 from learning.agent import *
 from data.data_manager import DataManager
+from tasks.wiping import *
+from tasks.barnicle_scrap import *
+from tasks.fragile_insert import *
 @dataclass
 class Args:
     exp_name: Optional[str] = "Test_Run"
