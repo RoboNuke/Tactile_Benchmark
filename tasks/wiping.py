@@ -56,7 +56,7 @@ class WipingEnv(BaseEnv):
 
     FOOD_SPAWN_RADIUS: float = 0.05
 
-    MIN_FOOD_DENSITY: float = 75000#50000.0
+    MIN_FOOD_DENSITY: float = 75000.0#50000.0
     MAX_FOOD_DENSITY: float = 75000.0
 
     MIN_FOOD_FRIC: float = 0.4
@@ -214,7 +214,7 @@ class WipingEnv(BaseEnv):
                     0.04,
                     0.04,
                 ]
-            ) * 0
+            ) 
             qpos = self._episode_rng.normal(0, 0.02, (b, len(qpos))) + qpos
             qpos[:, -2:] = 0.04
             self.agent.robot.set_qpos(qpos)

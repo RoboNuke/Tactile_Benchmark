@@ -65,6 +65,8 @@ class Args:
     """How to encode the force information"""
     reward_mode: str = 'normalized_dense'
     """Reward mode to use during training"""
+    robot: str = "panda"
+    """Which robot to use """
 
     # Algorithm specific arguments
     env_id: str = "PickCube-v1"
@@ -194,6 +196,7 @@ if __name__ == "__main__":
     #print("Using device:", device)
     # env setup
     env_kwargs = dict(
+        robot_uids=args.robot,
         obs_mode=args.obs_mode, 
         control_mode=args.control_mode, 
         render_mode=args.render_mode, 

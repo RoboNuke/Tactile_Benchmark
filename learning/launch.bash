@@ -6,7 +6,7 @@ capture_video=1
 
 # create folder for this round of experiments
 exp_set_name="Stability_Baseline"
-number_of_seeds=1
+number_of_seeds=2
 
 # shared learning data
 env_id="WipeFood-v1"
@@ -22,7 +22,7 @@ reconfiguration_freq=1
 reward_scale=1.0
 
 # exp data
-obs_mode='state_dict'
+obs_mode='rgb'
 control_mode='pd_joint_delta_pos'
 reward_mode='normalized_dense'
 include_force=0
