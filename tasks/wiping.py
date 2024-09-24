@@ -48,19 +48,19 @@ class WipingEnv(BaseEnv):
 
     # food defs
     food: Actor = None
-    MIN_FOOD_W: float = 0.0025
+    MIN_FOOD_W: float = 0.02#0.0025
     MAX_FOOD_W: float = 0.02
 
-    MIN_FOOD_H: float = 0.005
+    MIN_FOOD_H: float = 0.01#0.005
     MAX_FOOD_H: float = 0.01
 
     FOOD_SPAWN_RADIUS: float = 0.05
 
-    MIN_FOOD_DENSITY: float = 50000.0
+    MIN_FOOD_DENSITY: float = 75000#50000.0
     MAX_FOOD_DENSITY: float = 75000.0
 
     MIN_FOOD_FRIC: float = 0.4
-    MAX_FOOD_FRIC: float = 0.8
+    MAX_FOOD_FRIC: float = 0.4#0.8
 
     #MIN_NUM_FOOD: int = 2
     #MAX_NUM_FOOD: int = 10

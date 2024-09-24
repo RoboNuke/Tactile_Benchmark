@@ -34,7 +34,7 @@ class FlattenRGBDFTObservationWrapper(gym.ObservationWrapper):
         self.base_env.update_obs_space(new_obs)
 
     def observation(self, observation: Dict):
-        if 'sensor_param' in observation:
+        if 'sensor_param' in observation.keys():
             del observation["sensor_param"]
 
         if 'sensor_data' in observation:
