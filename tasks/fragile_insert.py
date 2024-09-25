@@ -31,17 +31,15 @@ class FragilePegInsert(PegInsertionSideEnv):
         ]  
 
     def evaluate(self):
-        success, peg_head_pos_at_hole = self.has_peg_inserted()
         #print(
             #torch.linalg.norm(self.scene.get_pairwise_contact_forces(self.peg, self.box), axis=1)
         #    self.scene.get_pairwise_contact_forces(self.peg, self.box)
             #print(self.box),
             #print(self.peg)
         #)
-        return dict(success=success, peg_head_pos_at_hole=peg_head_pos_at_hole)
-        #out_dic = super().evaluate()
-        #out_dic['fail'], out_dic['max_force'], out_dic['fail_cause'] = self.pegBroke()
-        #return out_dic
+        out_dic = super().evaluate()
+        out_dic['fail'], out_dic['max_force'], out_dic['fail_cause'] = self.pegBroke()
+        return out_dic
     
     def _get_obs_extra(self, info: Dict):
         """ 
@@ -53,6 +51,7 @@ class FragilePegInsert(PegInsertionSideEnv):
         if self.return_force_data:
             data['force'] = self.agent.tcp.get_net_contact_forces()
         return data
+    
     def getPegForce(self, object: Actor):
 
         contact_force = self.scene.get_pairwise_contact_forces(

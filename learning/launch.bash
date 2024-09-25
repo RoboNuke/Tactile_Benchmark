@@ -9,10 +9,10 @@ exp_set_name="Stability_Baseline"
 number_of_seeds=2
 
 # shared learning data
-env_id="WipeFood-v1"
-num_envs=128
+env_id="FragilePegInsert-v1"
+num_envs=16
 num_steps=50
-total_timesteps=200000
+total_timesteps=2000000
 eval_freq=10
 
 update_epochs=8
