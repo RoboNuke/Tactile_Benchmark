@@ -46,12 +46,11 @@ class DataManager():
 
     def add_scalar(self, 
                    data, 
-                   step=None, 
-                   commit=False
+                   step=None
         ):
-        if step is not None:
-            commit = False
-        wandb.log(data, step=step, commit=commit)
+        #if step is not None:
+        #    commit = False
+        wandb.log(data, step=step)#, commit=commit)
 
     def add_gif(self, 
                 data_or_path, 
@@ -85,6 +84,9 @@ class DataManager():
                         format='mp4'
                     )
             }, step=step)
+
+    def add_histogram(self, name, data, step):
+        wandb.log({name: wandb.Histogram(data)}, step=step)
 
     def add_ckpt(self, ckpt_path, wandb_path):
         """

@@ -6,13 +6,15 @@ capture_video=1
 
 # create folder for this round of experiments
 exp_set_name="Stability_Baseline"
-number_of_seeds=2
+number_of_seeds=1
 
 # shared learning data
+#env_id="PegInsertionSide-v1"
 env_id="FragilePegInsert-v1"
+#env_id="WipeFood-v1"
 num_envs=16
 num_steps=50
-total_timesteps=2000000
+total_timesteps=19200
 eval_freq=10
 
 update_epochs=8
@@ -75,6 +77,7 @@ do
         --env-id=$env_id \
         --num-envs=$num_envs \
         --num-steps=$num_steps \
+        --num_eval_steps=$num_steps \
         --total-timesteps=$total_timesteps \
         --eval-freq=$eval_freq \
         --update-epochs=$update_epochs \

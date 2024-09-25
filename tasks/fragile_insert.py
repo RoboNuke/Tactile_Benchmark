@@ -9,7 +9,7 @@ from mani_skill.utils import common, sapien_utils
 from typing import Any, Dict, Union
 from mani_skill.utils.structs.actor import Actor
 
-@register_env("FragilePegInsert-v1", max_episode_steps=150)
+@register_env("FragilePegInsert-v1", max_episode_steps=30)
 class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 35.0
     SUPPORTED_ROBOTS = ["panda", "fetch"]
@@ -29,6 +29,7 @@ class FragilePegInsert(PegInsertionSideEnv):
             self.agent.finger2_link,
             self.box
         ]  
+        self.max_peg_force = torch.zeros((self.num_envs), device=self.device)
 
     def evaluate(self):
         #print(
@@ -38,7 +39,10 @@ class FragilePegInsert(PegInsertionSideEnv):
             #print(self.peg)
         #)
         out_dic = super().evaluate()
-        out_dic['fail'], out_dic['max_force'], out_dic['fail_cause'] = self.pegBroke()
+        out_dic['fail'], out_dic['dmg_force'], out_dic['fail_cause'] = self.pegBroke()
+
+        self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
+        out_dic['max_dmg_force'] = self.max_peg_force
         return out_dic
     
     def _get_obs_extra(self, info: Dict):

@@ -29,6 +29,8 @@ from data.data_manager import DataManager
 from tasks.wiping import *
 from tasks.barnicle_scrap import *
 from tasks.fragile_insert import *
+from wrappers.smoothness_obs_wrapper import SmoothnessObservationWrapper
+
 @dataclass
 class Args:
     exp_name: Optional[str] = "Test_Run"
@@ -174,6 +176,12 @@ class DictArray(object):
         new_buffer_shape = next(iter(new_dict.values())).shape[:len(shape)]
         return DictArray(new_buffer_shape, None, data_dict=new_dict)
 
+def log_smothness(data: Dict, logger: DataManager, step, fold='train'):
+    for k,v in data.items():
+        raw = v.float().cpu()
+        logger.add_histogram(f'{fold}/{k}_hist', raw, step)
+        logger.add_scalar({f'{fold}/{k}': raw.mean()}, step)
+
 
 if __name__ == "__main__":
     args = tyro.cli(Args)
@@ -261,6 +269,8 @@ if __name__ == "__main__":
     else:
         print("Running evaluation")
 
+    envs = SmoothnessObservationWrapper(envs)
+    eval_envs = SmoothnessObservationWrapper(eval_envs)
     # rgbd obs mode returns a dict of data, we flatten it so there is just a rgbd key and state key
     envs = FlattenRGBDFTObservationWrapper(
         envs, 
@@ -276,6 +286,7 @@ if __name__ == "__main__":
         state=args.include_state,
         force=args.include_force
     )
+
 
     if args.capture_video:
         
@@ -307,13 +318,13 @@ if __name__ == "__main__":
     envs = ManiSkillVectorEnv(
         envs, 
         args.num_envs, 
-        ignore_terminations=not args.partial_reset, 
+        ignore_terminations=False, 
         record_metrics=True
     )
     eval_envs = ManiSkillVectorEnv(
         eval_envs, 
         args.num_eval_envs, 
-        ignore_terminations=True, 
+        ignore_terminations=False, 
         record_metrics=True
     )
     
@@ -342,6 +353,48 @@ if __name__ == "__main__":
     print(f"args.minibatch_size={args.minibatch_size} args.batch_size={args.batch_size} args.update_epochs={args.update_epochs}")
     print(f"####")
 
+    # add some stuff for logging
+    eval_returns = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
+    eval_reward = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device) # avg reward
+    eval_episode_lens = torch.zeros(args.num_eval_envs, dtype=torch.int32, device=device)
+    eval_succs = torch.zeros(args.num_eval_envs, dtype=torch.bool, device=device)
+    eval_fails = torch.zeros(args.num_eval_envs, dtype=torch.bool, device=device)
+    eval_dones = torch.zeros(args.num_eval_envs, dtype=torch.bool, device=device)
+
+    eval_ssv = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
+    eval_ssj = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
+    eval_max_dmg_force = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
+    eval_metrics = {
+        'eval/returns':eval_returns,
+        'eval/reward':eval_reward,
+        'eval/episode_length':eval_episode_lens,
+        'eval/success_rate':eval_succs,
+        'eval/failure_rate':eval_fails,
+        'eval_smoothness/sum_squared_velocity': eval_ssv,
+        'eval_smoothness/sum_squared_jerk': eval_ssj,
+        'eval_smoothness/avg_max_force': eval_max_dmg_force,
+    }
+    # add some stuff for logging
+    train_returns = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
+    train_reward = torch.zeros(args.num_envs, dtype=torch.float32, device=device) # avg reward
+    train_episode_lens = torch.zeros(args.num_envs, dtype=torch.int32, device=device)
+    train_succs = torch.zeros(args.num_envs, dtype=torch.bool, device=device)
+    train_fails = torch.zeros(args.num_envs, dtype=torch.bool, device=device)
+    train_dones = torch.zeros(args.num_envs, dtype=torch.bool, device=device)
+    train_ssv = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
+    train_ssj = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
+    train_max_dmg_force = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
+    
+    train_metrics = {
+        'train/returns':train_returns,
+        'train/reward':train_reward,
+        'train/episode_length':train_episode_lens,
+        'train/success_rate':train_succs,
+        'train/failure_rate':train_fails,
+        'train_smoothness/sum_squared_velocity': train_ssv,
+        'train_smoothness/sum_squared_jerk': train_ssj,
+        'train_smoothness/avg_max_force': train_max_dmg_force,
+    }
 
     agent = Agent(
         envs, 
@@ -362,31 +415,70 @@ if __name__ == "__main__":
         if iteration % args.eval_freq == 1 or iteration==args.num_iterations:
             print("Evaluating")
             eval_obs, _ = eval_envs.reset()
-            eval_metrics = defaultdict(list)
+            #eval_metrics = defaultdict(list)
+            #smooth_metrics = defaultdict(list)
             for _ in range(args.num_eval_steps):
                 with torch.no_grad():
                     eval_obs, eval_rew, eval_terminations, eval_truncations, eval_infos = eval_envs.step(agent.get_action(eval_obs, deterministic=True))
+                    
                     if "final_info" in eval_infos:
-                        #print(eval_infos.keys())
                         mask = eval_infos["_final_info"]
+                        sm = eval_infos['smoothness']
+                        eval_ssv[mask] = sm['sum_sqr_qv'][mask]
+                        eval_ssj[mask] = sm['sum_sqr_qjerk'][mask]
+                        eval_max_dmg_force[mask] = sm['max_dmg_force'][mask]
                         #print("episode:", eval_infos['final_info']['episode'].keys())
+                        eval_succs[mask] = eval_infos['success'][mask]
+                        eval_fails[mask] = eval_infos['fail'][mask]
+                        eval_episode_lens[mask] = eval_infos['elapsed_steps'][mask]
+                        eval_dones[mask] = True
+                        fin_eps = eval_infos['final_info']['episode']
+                        if 'success_once' in fin_eps:
+                            # new system
+                            eval_returns[mask] = fin_eps['return'][mask]
+                            eval_reward[mask] = fin_eps['reward'][mask]
+                        else:
+                            # old system
+                            eval_returns[mask] = fin_eps['r'][mask]
+                            eval_reward[mask] = eval_returns[mask] / eval_episode_lens[mask]
 
-                        for k, v in eval_infos["final_info"]["episode"].items():
-                            #print(k)
-                            eval_metrics[k].append(v)
-                        #print(eval_infos["final_info"].keys())
-                        #for k, v in eval_infos['final_info'].items():
-                        #    if not k == 'episode':
-                        #        print(k)
-                        #        eval_metrics[k].append(v)
+            mask = ~eval_dones
+            sm = eval_infos['smoothness']
+            eval_ssv[mask] = sm['sum_sqr_qv'][mask]
+            eval_ssj[mask] = sm['sum_sqr_qjerk'][mask]
+            eval_max_dmg_force[mask] = sm['max_dmg_force'][mask]
+            eval_succs[mask] = eval_infos['success'][mask]
+            eval_fails[mask] = eval_infos['fail'][mask]
+            eval_episode_lens[mask] = eval_infos['elapsed_steps'][mask]
+            
+            fin_eps = eval_infos['episode']
+            if 'success_once' in fin_eps:
+                # new system
+                eval_returns[mask] = fin_eps['return'][mask]
+                eval_reward[mask] = fin_eps['reward'][mask]
+            else:
+                # old system
+                eval_returns[mask] = fin_eps['r'][mask]
+                eval_reward[mask] = eval_returns[mask] / eval_episode_lens[mask]
 
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
-            
             for k, v in eval_metrics.items():
                 #print(k,v)
-                mean = torch.stack(v).float().mean()
-                print(f"eval_{k}_mean={mean}")
-                logger.add_scalar({f'eval/{k}':mean}, step=global_step)
+                mean = v.cpu().float().mean()
+                print(f"\teval_{k}_mean={mean}")
+                logger.add_scalar({k:mean}, step=global_step+1)
+            
+            #for k in smooth_metrics:
+            #    smooth_metrics[k] = torch.stack(smooth_metrics[k])
+
+            #log_smothness(
+            #    smooth_metrics,
+            #    logger=logger, 
+            #    step=global_step+1,
+            #    fold='eval_smoothness',
+            #)
+                #data[f'eval/{k}'] = mean
+            #logger.add_scalar(data, step=global_step, commit=True)
             #assert(0==1)
             
             if args.capture_video:
@@ -397,7 +489,7 @@ if __name__ == "__main__":
                 logger.add_mp4(
                     f'{logger.get_dir()}/videos/{eval_count}.mp4', 
                     tag = 'eval',
-                    step= global_step, 
+                    step= global_step+1, 
                     cap=f'Evaluation after {global_step} steps', 
                     fps=10
                 )
@@ -439,20 +531,68 @@ if __name__ == "__main__":
             if "final_info" in infos:
                 final_info = infos["final_info"]
                 done_mask = infos["_final_info"]
-                for k, v in final_info["episode"].items():
-                    logger.add_scalar(
-                        {f"train/{k}":v[done_mask].float().mean()}, 
-                        step=global_step)
-                #for k, v in final_info.items():
-                #    if not k == 'episode':
-                #        logger.add_scalar(
-                #            {f"train/{k}":v[done_mask].float().mean()}, 
-                #            step=global_step
-                #        )
+                sm = infos['smoothness']
+                train_ssv[done_mask] = sm['sum_sqr_qv'][done_mask]
+                train_ssj[done_mask] = sm['sum_sqr_qjerk'][done_mask]
+                train_max_dmg_force[done_mask] = sm['max_dmg_force'][done_mask]
+                
+                #print("episode:", train_infos['final_info']['episode'].keys())
+                train_succs[done_mask] = infos['success'][done_mask]
+                train_fails[done_mask] = infos['fail'][done_mask]
+                train_episode_lens[done_mask] = infos['elapsed_steps'][done_mask]
+                train_dones[done_mask] = True
+                fin_eps = final_info['episode']
+                if 'success_once' in fin_eps:
+                    # new system
+                    train_returns[done_mask] = fin_eps['return'][done_mask]
+                    train_reward[done_mask] = fin_eps['reward'][done_mask]
+                else:
+                    # old system
+                    train_returns[done_mask] = fin_eps['r'][done_mask]
+                    train_reward[done_mask] = train_returns[done_mask] / train_episode_lens[done_mask]
+
+                #log_smothness(
+                #    final_info['smoothness'],
+                #    logger,
+                #    global_step, 
+                #    'train_smoothness'
+                #)
+
                 for k in infos["final_observation"]:
                     infos["final_observation"][k] = infos["final_observation"][k][done_mask]
                 with torch.no_grad():
                     final_values[step, torch.arange(args.num_envs, device=device)[done_mask]] = agent.get_value(infos["final_observation"]).view(-1)
+        
+        done_mask = ~train_dones
+        sm = infos['smoothness']
+        train_ssv[done_mask] = sm['sum_sqr_qv'][done_mask]
+        train_ssj[done_mask] = sm['sum_sqr_qjerk'][done_mask]
+        train_max_dmg_force[done_mask] = sm['max_dmg_force'][done_mask]
+        
+        #print("episode:", train_infos['final_info']['episode'].keys())
+        train_succs[done_mask] = infos['success'][done_mask]
+        train_fails[done_mask] = infos['fail'][done_mask]
+        train_episode_lens[done_mask] = infos['elapsed_steps'][done_mask]
+        fin_eps = infos['episode']
+        if 'success_once' in fin_eps:
+            # new system
+            train_returns[done_mask] = fin_eps['return'][done_mask]
+            train_reward[done_mask] = fin_eps['reward'][done_mask]
+        else:
+            # old system
+            train_returns[done_mask] = fin_eps['r'][done_mask]
+            train_reward[done_mask] = train_returns[done_mask] / train_episode_lens[done_mask]
+
+        # reset the dones
+        train_dones[train_dones] = False
+
+        # log the stuff
+        for k, v in train_metrics.items():
+            logger.add_scalar(
+                {k:v.cpu().float().mean()}, 
+                step=global_step
+            )
+
         rollout_time = time.time() - rollout_time
         # bootstrap value according to termination and truncation
         with torch.no_grad():

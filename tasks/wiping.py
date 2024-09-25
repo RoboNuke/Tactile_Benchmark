@@ -299,8 +299,8 @@ class WipingEnv(BaseEnv):
             "fail": fail,
             "success": succ,
             "is_robot_static": is_robot_static,
-            "max_table_force": self.max_table_force,
-            "table_force": table_force
+            "max_dmg_force": self.max_table_force,
+            "dmg_force": table_force
         }
     
     def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
@@ -312,7 +312,7 @@ class WipingEnv(BaseEnv):
         """
 
         #print(info['table_force'])
-        r = -(1-torch.sigmoid(14-20*info['table_force'] / self.FORCE_DMG_TABLE))
+        r = -(1-torch.sigmoid(14-20*info['dmg_force'] / self.FORCE_DMG_TABLE))
 
         tcp_to_obj_dist = torch.linalg.norm(
             self.agent.tcp.pose.p - self.food.pose.p,
