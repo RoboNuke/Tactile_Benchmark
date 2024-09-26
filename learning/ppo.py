@@ -462,8 +462,6 @@ if __name__ == "__main__":
                 eval_reward[mask] = eval_returns[mask] / eval_episode_lens[mask]
 
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
-            print(eval_max_dmg_force)
-            print(eval_fails)
             for k, v in eval_metrics.items():
                 #print(k,v)
                 mean = v.cpu().float().mean()

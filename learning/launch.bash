@@ -6,8 +6,13 @@ capture_video=1
 
 # create folder for this round of experiments
 exp_set_name="Stability_Baseline"
-number_of_seeds=1
+start=$1
+end=$2
 
+echo $start
+echo $end
+
+sleep 120
 # shared learning data
 #env_id="PegInsertionSide-v1"
 env_id="FragilePegInsert-v1"
@@ -64,7 +69,7 @@ else
     include_state='no-include-state'
 fi
 
-for i in $(seq 1 $number_of_seeds);
+for i in $(seq $start $end);
 do
     #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
     #exp_name = "pickcube_state_baseline_" + $i
