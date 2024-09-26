@@ -4,6 +4,7 @@
 tmux new-session -d -s "Fragile_Baseline"
 
 # Window 1: Run script1.sh
+tmux send-keys -t "Fragile_Baseline:0" "conda activate mani && "
 tmux send-keys -t "Fragile_Baseline:0" "bash learning/launch.bash 1 3" C-m
 
 # Create a new window and run script2.sh

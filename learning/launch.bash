@@ -12,7 +12,6 @@ end=$2
 echo $start
 echo $end
 
-sleep 120
 # shared learning data
 #env_id="PegInsertionSide-v1"
 env_id="FragilePegInsert-v1"
