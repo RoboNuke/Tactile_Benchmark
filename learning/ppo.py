@@ -420,7 +420,7 @@ if __name__ == "__main__":
             for _ in range(args.num_eval_steps):
                 with torch.no_grad():
                     eval_obs, eval_rew, eval_terminations, eval_truncations, eval_infos = eval_envs.step(agent.get_action(eval_obs, deterministic=True))
-                    
+                    #eval_envs._env.render_human()
                     if "final_info" in eval_infos:
                         mask = eval_infos["_final_info"]
                         sm = eval_infos['smoothness']
@@ -462,24 +462,13 @@ if __name__ == "__main__":
                 eval_reward[mask] = eval_returns[mask] / eval_episode_lens[mask]
 
             print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
+            print(eval_max_dmg_force)
+            print(eval_fails)
             for k, v in eval_metrics.items():
                 #print(k,v)
                 mean = v.cpu().float().mean()
                 print(f"\teval_{k}_mean={mean}")
                 logger.add_scalar({k:mean}, step=global_step+1)
-            
-            #for k in smooth_metrics:
-            #    smooth_metrics[k] = torch.stack(smooth_metrics[k])
-
-            #log_smothness(
-            #    smooth_metrics,
-            #    logger=logger, 
-            #    step=global_step+1,
-            #    fold='eval_smoothness',
-            #)
-                #data[f'eval/{k}'] = mean
-            #logger.add_scalar(data, step=global_step, commit=True)
-            #assert(0==1)
             
             if args.capture_video:
                 #print(f"Saving Video at {global_step}")

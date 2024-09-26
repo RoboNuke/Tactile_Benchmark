@@ -12,9 +12,9 @@ number_of_seeds=1
 #env_id="PegInsertionSide-v1"
 env_id="FragilePegInsert-v1"
 #env_id="WipeFood-v1"
-num_envs=16
-num_steps=50
-total_timesteps=19200
+num_envs=128
+num_steps=150
+total_timesteps=5000000
 eval_freq=10
 
 update_epochs=8
@@ -24,7 +24,7 @@ reconfiguration_freq=1
 reward_scale=1.0
 
 # exp data
-obs_mode='rgb'
+obs_mode='state_dict'
 control_mode='pd_joint_delta_pos'
 reward_mode='normalized_dense'
 include_force=0

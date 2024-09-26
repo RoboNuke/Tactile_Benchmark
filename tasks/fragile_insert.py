@@ -30,6 +30,9 @@ class FragilePegInsert(PegInsertionSideEnv):
             self.box
         ]  
         self.max_peg_force = torch.zeros((self.num_envs), device=self.device)
+    def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
+        super()._initialize_episode(env_idx, options)
+        self.max_peg_force[env_idx] *= 0# torch.zeros((self.num_envs), device=self.device)
 
     def evaluate(self):
         #print(
@@ -78,6 +81,7 @@ class FragilePegInsert(PegInsertionSideEnv):
                 idx = 2 # box
                 #print("\tForce on box:", obs_forces)
             resp_actor += idx * update - update * resp_actor   
+            
             max_forces = torch.maximum( max_forces, obs_forces)
 
         brokeFlag = self.maximum_peg_force <= max_forces
