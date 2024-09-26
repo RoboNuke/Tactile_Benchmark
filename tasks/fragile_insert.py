@@ -43,7 +43,9 @@ class FragilePegInsert(PegInsertionSideEnv):
         #)
         out_dic = super().evaluate()
         out_dic['fail'], out_dic['dmg_force'], out_dic['fail_cause'] = self.pegBroke()
-
+        #over_mask = self.unwrapped.elapsed_steps > 150 
+        #over_mask = torch.logical_and(over_mask, ~out_dic['success'])
+        #out_dic['fail'][over_mask] = True 
         self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
         out_dic['max_dmg_force'] = self.max_peg_force
         return out_dic
@@ -90,8 +92,8 @@ class FragilePegInsert(PegInsertionSideEnv):
     def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
         #print("Computing dense reward")
         r = super().compute_dense_reward(obs, action, info)
-        r *= torch.logical_not(info['fail']) # zero out all failed cases
-        r -= 10 * info['fail'] # make them all -10!
+        #r *= torch.logical_not(info['fail']) # zero out all failed cases
+        #r -= 10 * info['fail'] # make them all -10!
         #print("dense reward:", r[0])
         return r
         

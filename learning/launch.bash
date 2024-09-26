@@ -1,6 +1,7 @@
 # logging data
 wandb_entity="hur"
 wandb_project_name="In-Contact_Baseline"
+#wandb_project_name="Tester"
 save_model=1
 capture_video=1
 
@@ -19,6 +20,7 @@ env_id="FragilePegInsert-v1"
 num_envs=128
 num_steps=150
 total_timesteps=5000000
+#total_timesteps=50000
 eval_freq=10
 
 update_epochs=8
