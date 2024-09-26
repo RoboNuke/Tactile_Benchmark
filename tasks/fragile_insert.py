@@ -9,7 +9,7 @@ from mani_skill.utils import common, sapien_utils
 from typing import Any, Dict, Union
 from mani_skill.utils.structs.actor import Actor
 
-@register_env("FragilePegInsert-v1", max_episode_steps=30)
+@register_env("FragilePegInsert-v1", max_episode_steps=150)
 class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 500.0
     SUPPORTED_ROBOTS = ["panda", "fetch"]
