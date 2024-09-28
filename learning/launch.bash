@@ -1,7 +1,7 @@
 # logging data
 wandb_entity="hur"
-wandb_project_name="In-Contact_Baseline"
-#wandb_project_name="Tester"
+#wandb_project_name="In-Contact_Baseline"
+wandb_project_name="Tester"
 save_model=1
 capture_video=1
 
@@ -15,11 +15,11 @@ echo $end
 
 # shared learning data
 #env_id="PegInsertionSide-v1"
-env_id="FragilePegInsert-v1"
-#env_id="WipeFood-v1"
-num_envs=128
-num_steps=150
-total_timesteps=5000000
+#env_id="FragilePegInsert-v1"
+env_id="WipeFood-v1"
+num_envs=16
+num_steps=50
+total_timesteps=50000
 #total_timesteps=50000
 eval_freq=10
 

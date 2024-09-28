@@ -136,6 +136,15 @@ class DataManager():
             
         df.to_csv(save_path, index=False)
 
+    def download_runs_by_subname(self, sub_name):
+        runs = self.api.runs(self.entity + "/" + self.project)
+        out_runs = []
+        for run in runs:
+            if sub_name in run.name:
+                out_runs.append(run)
+            
+        return out_runs
+
     def download_run_data_by_name(self, run_name):
         runs = self.api.runs(self.entity + "/" + self.project)
 
@@ -161,7 +170,31 @@ class DataManager():
             
         return groups
         
+    def add_runs_to_plot(self, 
+                    runs, 
+                    ax,
+                    var_name="loss",
+                    color='b'
+    ):
         
+        ys = []
+        for run in runs:
+            his = run.history()
+            step = his['_step'].to_numpy()
+            y = his[var_name].to_numpy()
+            step = step[~np.isnan(y)]
+            y = y[~np.isnan(y)]
+            ys.append(y)
+
+        self.plot_with_ci(ax, 
+                    step, 
+                    np.array(ys),
+                    data_name=var_name,
+                    color=color
+        )
+        
+
+
 
     def plot_runs_with_key(self, key, var_name="loss", 
                            title="Force Encoding's effect on Loss",
@@ -220,7 +253,7 @@ class DataManager():
 
         # Plot the data and the confidence interval
         ax.plot(x, y_mean, 
-                f'{color}-', 
+                f'{color}', 
                 label=data_name)
         ax.fill_between(x, 
                         y_mean - ci, 
