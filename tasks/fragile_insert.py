@@ -13,6 +13,7 @@ from mani_skill.utils.structs.actor import Actor
 class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 500.0
     SUPPORTED_ROBOTS = ["panda", "fetch"]
+    
     def __init__(self, *args, obs_mode='state', **kwargs):
         # handle the ft stuff
         self.return_force_data = True
@@ -30,6 +31,7 @@ class FragilePegInsert(PegInsertionSideEnv):
             self.box
         ]  
         self.max_peg_force = torch.zeros((self.num_envs), device=self.device)
+
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         super()._initialize_episode(env_idx, options)
         self.max_peg_force[env_idx] *= 0# torch.zeros((self.num_envs), device=self.device)

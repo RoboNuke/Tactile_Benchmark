@@ -129,4 +129,4 @@ class TestDataManager(unittest.TestCase):
         self.DM.plot_runs_with_key(key='force_encoder', 
                                    var_name='loss',
                                    save_path='tests/test_fig.png')
-        self.DM.download_all_run_data()
+        self.DM.download_all_run_data() 

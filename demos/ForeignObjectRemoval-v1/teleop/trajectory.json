@@ -1,0 +1,41 @@
+{
+  "env_info": {
+    "env_id": "ForeignObjectRemoval-v1",
+    "env_kwargs": {
+      "robot_uids": "panda",
+      "obs_mode": "none",
+      "control_mode": "pd_joint_pos",
+      "reward_mode": "none"
+    },
+    "max_episode_steps": 50
+  },
+  "commit_info": null,
+  "episodes": [
+    {
+      "episode_id": 0,
+      "episode_seed": 0,
+      "control_mode": "pd_joint_pos",
+      "elapsed_steps": 55,
+      "reset_kwargs": {
+        "options": {},
+        "seed": 0
+      },
+      "success": false,
+      "fail": true
+    },
+    {
+      "episode_id": 1,
+      "episode_seed": 1,
+      "control_mode": "pd_joint_pos",
+      "elapsed_steps": 55,
+      "reset_kwargs": {
+        "options": {},
+        "seed": 1
+      },
+      "success": false,
+      "fail": true
+    }
+  ],
+  "source_type": "teleoperation",
+  "source_desc": "teleoperation via the click+drag system"
+}

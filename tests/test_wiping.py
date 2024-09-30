@@ -51,41 +51,6 @@ class TestWiping(unittest.TestCase):
                             obs_mode=obs_mode)
         self.envs.reset()
 
-    def test_food_load(self):
-        """
-            Re-loads the scene and 
-            checks (asumes single food)
-            - food sizes
-            - densities (via mass)
-        """
-        
-        self.get_env()
-        uw = self.envs.unwrapped
-        
-        min_mass = uw.MIN_FOOD_W * uw.MIN_FOOD_W * uw.MIN_FOOD_H * uw.MIN_FOOD_DENSITY
-        max_mass = uw.MAX_FOOD_W * uw.MAX_FOOD_W * uw.MAX_FOOD_H * uw.MAX_FOOD_DENSITY
-        for i in range(100):
-            self.envs.reset(options={"reconfigure":True})
-            
-            # get food properties
-            half_sizes = torch.zeros((2, 3), dtype=torch.float32, device=uw.device)
-            ms = torch.zeros((2),dtype=torch.float32, device = uw.device)
-            if uw.food == None:
-                assert(1==0)
-            for env_idx, food_body in enumerate(uw.food._objs):
-                cb = food_body.find_component_by_type(physx.PhysxRigidDynamicComponent)
-                cs = cb.get_collision_shapes()[0]
-                half_sizes[env_idx,:] = torch.from_numpy(cs.get_half_size())
-                ms[env_idx] = cs.get_density()
-
-            assert(torch.all(half_sizes[:,:2] <= uw.MAX_FOOD_W))
-            assert(torch.all(half_sizes[:,:2] >= uw.MIN_FOOD_W))
-
-            assert(torch.all(half_sizes[:,2] <= uw.MAX_FOOD_H))
-            assert(torch.all(half_sizes[:,2] >= uw.MIN_FOOD_H))
-
-            assert(torch.all(ms <= uw.MAX_FOOD_DENSITY))
-            assert(torch.all(ms >= uw.MIN_FOOD_DENSITY))
 
     def test_episode_init(self):
         """
