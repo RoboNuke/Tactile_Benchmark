@@ -253,7 +253,8 @@ if __name__ == "__main__":
             "state" if args.include_state else "without_state", # did we include state information 
             args.obs_mode, 
             "force" if args.include_force else "without_force",
-            args.control_mode # action space 
+            args.control_mode, # action space 
+            args.exp_max_dmg_force
         ]
 
         logger = DataManager(

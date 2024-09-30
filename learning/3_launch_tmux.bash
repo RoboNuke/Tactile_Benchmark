@@ -18,4 +18,4 @@ tmux new-window -t "Fragile_Baseline" -n "Window 3" "bash learning/launch.bash 7
 tmux attach -t "Fragile_Baseline"
 
 wait $pid
-echo done
+echo $1 $2 $3 complete!

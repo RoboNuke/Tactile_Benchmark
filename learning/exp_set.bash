@@ -1,6 +1,6 @@
 exp_types=("FragilePegInsert-v1")
-obs_types=("state_dict") # "state_dict_no_ft")
-dmg_vals=("0" "25") # "50" "100" "250" "500" "1000")
+obs_types=("state_dict" "state_dict_no_ft" "rgb" "rgb_no_ft")
+dmg_vals=("25.0" "50.0" "100.0" "250.0" "500.0" "100000.0")
 
 
 for obs_type in ${obs_types[@]}; do

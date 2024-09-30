@@ -13,10 +13,16 @@ end=$2
 # shared learning data
 #env_id="PegInsertionSide-v1"
 #env_id="FragilePegInsert-v1"
+if [ "$4" = 'rgb' ] || [ "$4" = 'rgb_no_ft' ]; then
+    num_envs=128
+else
+    num_envs=256
+fi
+
 env_id=$3
-num_envs=16
-num_steps=50
-total_timesteps=5000
+#num_envs=256
+num_steps=150
+total_timesteps=15000000
 #total_timesteps=50000
 eval_freq=10
 
