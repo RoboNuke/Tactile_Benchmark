@@ -14,8 +14,9 @@ class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 500.0
     SUPPORTED_ROBOTS = ["panda", "fetch"]
     
-    def __init__(self, *args, obs_mode='state', **kwargs):
+    def __init__(self, *args, obs_mode='state', dmg_force=500.0, **kwargs):
         # handle the ft stuff
+        self.maximum_peg_force = dmg_force
         self.return_force_data = True
         if 'no_ft' in obs_mode:
             self.return_force_data = False

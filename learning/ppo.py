@@ -69,7 +69,8 @@ class Args:
     """Reward mode to use during training"""
     robot: str = "panda"
     """Which robot to use """
-
+    exp_max_dmg_force: float = 500.0
+    """ Force to break the peg or the table """
     # Algorithm specific arguments
     env_id: str = "PickCube-v1"
     """the id of the environment"""
@@ -208,7 +209,8 @@ if __name__ == "__main__":
         obs_mode=args.obs_mode, 
         control_mode=args.control_mode, 
         render_mode=args.render_mode, 
-        sim_backend="gpu"
+        sim_backend="gpu",
+        dmg_force=args.exp_max_dmg_force
     )
 
     eval_envs = gym.make(

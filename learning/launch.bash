@@ -10,16 +10,13 @@ exp_set_name="Stability_Baseline"
 start=$1
 end=$2
 
-echo $start
-echo $end
-
 # shared learning data
 #env_id="PegInsertionSide-v1"
 #env_id="FragilePegInsert-v1"
-env_id="WipeFood-v1"
+env_id=$3
 num_envs=16
 num_steps=50
-total_timesteps=50000
+total_timesteps=5000
 #total_timesteps=50000
 eval_freq=10
 
@@ -30,12 +27,13 @@ reconfiguration_freq=1
 reward_scale=1.0
 
 # exp data
-obs_mode='state_dict'
+obs_mode=$4
 control_mode='pd_joint_delta_pos'
 reward_mode='normalized_dense'
 include_force=0
 include_state=1
 force_encoding="DNN"
+dmg_force=$5
 
 date=$(date +"%Y-%m-%d_%H:%M")
 #_${date}"
@@ -98,7 +96,8 @@ do
         --$include_force \
         --$include_state \
         --seed=$i \
-        --exp-name=$exp_name 
+        --exp-name=$exp_name \
+        --exp-max-dmg-force=$dmg_force
 done
 
 
