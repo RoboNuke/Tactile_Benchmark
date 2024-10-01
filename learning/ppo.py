@@ -254,7 +254,7 @@ if __name__ == "__main__":
             args.obs_mode, 
             "force" if args.include_force else "without_force",
             args.control_mode, # action space 
-            args.exp_max_dmg_force
+            str(args.exp_max_dmg_force)
         ]
 
         logger = DataManager(
