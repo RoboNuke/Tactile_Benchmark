@@ -1,12 +1,12 @@
 # logging data
 wandb_entity="hur"
-#wandb_project_name="In-Contact_Baseline"
-wandb_project_name="Tester"
+wandb_project_name="In-Contact_Baseline"
+#wandb_project_name="Tester"
 save_model=1
 capture_video=1
 
 # create folder for this round of experiments
-exp_set_name="Stability_Baseline"
+exp_set_name=$6 #"Stability_Baseline"
 start=$1
 end=$2
 
@@ -20,10 +20,10 @@ else
 fi
 
 env_id=$3
-#num_envs=256
+#num_envs=2
 num_steps=150
-total_timesteps=15000000
-#total_timesteps=50000
+total_timesteps=10000000
+#total_timesteps=5000
 eval_freq=10
 
 update_epochs=8
