@@ -71,6 +71,7 @@ class Args:
     """Which robot to use """
     exp_max_dmg_force: float = 500.0
     """ Force to break the peg or the table """
+
     # Algorithm specific arguments
     env_id: str = "PickCube-v1"
     """the id of the environment"""

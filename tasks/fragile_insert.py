@@ -32,11 +32,17 @@ class FragilePegInsert(PegInsertionSideEnv):
             self.box
         ]  
         self.max_peg_force = torch.zeros((self.num_envs), device=self.device)
+        self.termed = torch.zeros((self.num_envs), dtype=torch.bool, device=self.device)
 
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         super()._initialize_episode(env_idx, options)
         self.max_peg_force[env_idx] *= 0# torch.zeros((self.num_envs), device=self.device)
+        self.termed[env_idx] = False
 
+    def step(self, action: Union[None, np.ndarray, torch.Tensor, Dict]):
+        action[self.termed, :]  *= 0.0
+        return super().step(action)
+    
     def evaluate(self):
         #print(
             #torch.linalg.norm(self.scene.get_pairwise_contact_forces(self.peg, self.box), axis=1)
@@ -51,6 +57,7 @@ class FragilePegInsert(PegInsertionSideEnv):
         #out_dic['fail'][over_mask] = True 
         self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
         out_dic['max_dmg_force'] = self.max_peg_force
+        self.termed[torch.logical_or(out_dic['fail'], out_dic['success'])] = True
         return out_dic
     
     def _get_obs_extra(self, info: Dict):

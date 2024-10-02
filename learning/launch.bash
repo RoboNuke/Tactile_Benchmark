@@ -6,9 +6,7 @@ save_model=1
 capture_video=1
 
 # create folder for this round of experiments
-exp_set_name=$6 #"Stability_Baseline"
-start=$1
-end=$2
+
 
 # shared learning data
 #env_id="PegInsertionSide-v1"
@@ -19,10 +17,7 @@ else
     num_envs=256
 fi
 
-env_id=$3
-#num_envs=2
-num_steps=150
-total_timesteps=10000000
+#num_envs=16
 #total_timesteps=5000
 eval_freq=10
 
@@ -33,13 +28,29 @@ reconfiguration_freq=1
 reward_scale=1.0
 
 # exp data
+start=$1
+end=$2
+env_id=$3
 obs_mode=$4
-control_mode='pd_joint_delta_pos'
-reward_mode='normalized_dense'
-include_force=0
-include_state=1
-force_encoding="DNN"
 dmg_force=$5
+exp_set_name=$6 #"Stability_Baseline"
+num_steps=$7
+total_timesteps=$8
+control_mode=$9
+reward_mode=$10
+force_encoding=$11
+
+if [[ $obs_mode == *"no_ft"* ]]; then
+    include_force=0
+else
+    include_force=1
+fi
+
+if [[ $obs_mode == *"rgb"* ]]; then
+    include_state=0
+else
+    include_state=1
+fi
 
 date=$(date +"%Y-%m-%d_%H:%M")
 #_${date}"

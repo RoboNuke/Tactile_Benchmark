@@ -78,7 +78,6 @@ class NatureCNN(nn.Module):
         extractors = {}
         self.out_features = 0
         feature_size = 256
-        
         if 'rgb' in sample_obs:
             in_channels=sample_obs["rgb"].shape[-1]
             image_size=(sample_obs["rgb"].shape[1], sample_obs["rgb"].shape[2])
@@ -111,8 +110,6 @@ class NatureCNN(nn.Module):
                 fc = nn.Sequential(nn.Linear(n_flatten, feature_size), nn.ReLU())
             extractors["rgb"] = nn.Sequential(cnn, fc)
             self.out_features += feature_size
-            
-
 
         if "state" in sample_obs:
             # for state data we simply pass it through a single linear layer
@@ -121,14 +118,15 @@ class NatureCNN(nn.Module):
             self.out_features += 256
 
         if "force" in sample_obs:
-            if force_type == "FNN":
+            if force_type == "FFN":
                 force_size = sample_obs['force'].shape[-1]
                 extractors["force"] = nn.Linear(force_size, 256)
                 self.out_features += 256
+                
             elif force_type == "1D-CNN":
-                raise NotImplementedError
+                raise NotImplementedError(f"1D-CNN not implemented yet")
             else:
-                raise NotImplementedError
+                raise NotImplementedError(f"Unexpected force type:{force_type}")
             
         self.extractors = nn.ModuleDict(extractors)
 
