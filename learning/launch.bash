@@ -27,6 +27,7 @@ partial_reset=1
 reconfiguration_freq=1
 reward_scale=1.0
 
+
 # exp data
 start=$1
 end=$2
