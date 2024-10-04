@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo 'bash learning/launch.bash 1 2 $@; exit'
-
+sleep 2
 # start end env_id obs_mode dmg_force exp_name
 # Create a new tmux session
 tmux new-session -d -s "Fragile_Baseline"
@@ -12,17 +12,18 @@ tmux send-keys -t "Fragile_Baseline:0" 'bash learning/launch.bash 1 2 '
 tmux send-keys -t "Fragile_Baseline:0" "$*"
 tmux send-keys -t "Fragile_Baseline:0" '; exit' C-m
 
+
 # Create a new window and run script2.sh
 tmux split-window -v
-tmux send-keys -t 1 'conda activate mani && bash learning/launch.bash 3 4 '
+tmux send-keys -t 1 "conda activate mani && bash learning/launch.bash 3 4 "
 tmux send-keys -t 1 "$*"
-tmux send-keys -t 1 '; sleep 60; exit' C-m
+tmux send-keys -t 1 "; sleep 60; exit" C-m
 
 # Create another window and run script3.sh
 tmux split-window -v
-tmux send-keys -t 2 'conda activate mani && bash learning/launch.bash 5 6 '
+tmux send-keys -t 2 "conda activate mani && bash learning/launch.bash 5 6 "
 tmux send-keys -t 2 "$*"
-tmux send-keys -t 2 '; sleep 60; exit' C-m
+tmux send-keys -t 2 "; sleep 60; exit" C-m
 
 # Attach to the session
 tmux attach -t "Fragile_Baseline"

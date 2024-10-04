@@ -27,7 +27,6 @@ partial_reset=1
 reconfiguration_freq=1
 reward_scale=1.0
 
-
 # exp data
 start=$1
 end=$2
@@ -38,8 +37,8 @@ exp_set_name=$6 #"Stability_Baseline"
 num_steps=$7
 total_timesteps=$8
 control_mode=$9
-reward_mode=$10
-force_encoding=$11
+reward_mode=${10}
+force_encoding=${11}
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
