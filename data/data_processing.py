@@ -17,7 +17,7 @@ class Args:
     """the wandb's project name"""
     exp_prefex: Optional[str] = "Test_Run"
     """the name of this experiment"""
-    local_save_path: str = 'data/plots/test'
+    local_save_path: str = 'data/plots/init_no_force_data'
 
     data_to_plot: List = field(default_factory=lambda :['/success_rate', 
                                '/reward', 
@@ -50,10 +50,15 @@ class Args:
     eval_plots: bool = True
     """Create plots for evaluation data"""
 
-    data_by_subname: bool = True
+    data_by_subname: bool = False
     """plot only data with this subname"""
     subname: Optional[str] = '2024-09-25_18:46'
     """subname to filter in data_by_subname mode"""
+
+    data_by_config_key: bool = True
+    """Key to sort data by"""
+    config_key: Optional[str] = 'exp_max_dmg_force'
+    """Config key to sort data by if data_by_config_key is set to true"""
 
 
 def prepMetadata(run):
@@ -101,6 +106,40 @@ if __name__=="__main__":
 
                 fig.savefig(f'{args.local_save_path}/{data_source}/{name}.png')
         plt.show()
+
+    if args.data_by_config_key:
+        """
+        grouped_runs = DM.group_runs_by_key(args.config_key)
+        assert len(grouped_runs) > 0, f"No config key called {args.config_key}"
+        #metadata = prepMetadata(runs[0])
+        for data_source in data_sources:
+            for data_idx, data_name in enumerate(args.data_to_plot):
+                fig, ax = plt.subplots(figsize=(10, 5), dpi=200)
+                ax.set_title(args.subplot_titles[data_idx])
+                ax.set_ylabel(args.data_y_labels[data_idx])
+                ax.set_xlabel('Steps')
+
+                color= ['b','r']
+                keys = ['Rigid', '500 N']
+                for i, run_group in enumerate(grouped_runs):
+                    DM.add_runs_to_plot(run_group, ax, f'{data_source}{data_name}', color[i], data_name=keys[i])
+
+                name = data_name.split("/")[-1]
+
+                fig.savefig(f'{args.local_save_path}/{data_source}/{name}.png')
+        plt.show()
+        """
+        for data_source in data_sources:
+            for data_idx, data_name in enumerate(args.data_to_plot):
+                name = data_name.split("/")[-1]
+                DM.plot_runs_with_key(
+                    args.config_key, 
+                    var_name=f'{data_source}{data_name}', 
+                    title=args.subplot_titles[data_idx],
+                    xlab='Steps',
+                    ylab=args.data_y_labels[data_idx],
+                    save_path=f'{args.local_save_path}/{data_source}/{name}.png',
+                )
 
 
 

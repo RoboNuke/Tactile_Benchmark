@@ -161,12 +161,18 @@ class DataManager():
         """
         runs = self.api.runs(self.entity + "/" + self.project)
         groups = {}
+        
         for run in runs:
-            val = run.config[key]
-            if val in groups:
-                groups[val].append(run)
-            else:
-                groups[val] = [run]
+            #print(run.config.keys())
+            try:
+                val = run.config[key]
+            
+                if val in groups:
+                    groups[val].append(run)
+                else:
+                    groups[val] = [run]
+            except:
+                pass
             
         return groups
         
@@ -174,7 +180,8 @@ class DataManager():
                     runs, 
                     ax,
                     var_name="loss",
-                    color='b'
+                    color='b',
+                    data_name="test"
     ):
         
         ys = []
@@ -189,32 +196,40 @@ class DataManager():
         self.plot_with_ci(ax, 
                     step, 
                     np.array(ys),
-                    data_name=var_name,
+                    data_name=data_name,
                     color=color
         )
         
 
 
 
-    def plot_runs_with_key(self, key, var_name="loss", 
+    def plot_runs_with_key(self, key, 
+                           var_name="loss", 
                            title="Force Encoding's effect on Loss",
                            xlab='Steps',
                            ylab='Loss',
                            save_path="",
-                           colors = ['r', 'g', 'b', 'y', 'b']):
+                           colors = ['r', 'g', 'b', 'y', 'b'],
+                            ylims=None):
         """
             Sorts data into groups given by key, and 
             then plots each group with 95% CI then
             saves the figure to save_path as vector img
         """
+        if '_smoothness/avg_max_force' in var_name:
+            ylims = [0.0, 250.0]
+
+
         # get groups
         groups = self.group_runs_by_key(key)
-
+        print("Group names:", groups.keys())
         # create plot
         fig, ax = plt.subplots(figsize=(10, 5), dpi=200)
         ax.set_title(title)
         ax.set_ylabel(ylab)
         ax.set_xlabel(xlab)
+        if type(ylims) == list:
+            ax.set_ylim(ylims[0], ylims[1])
         # convert to numpy lists
         max_step = -1
         n_steps = 10000000
@@ -223,11 +238,15 @@ class DataManager():
             step = None
             for run in groups[group_name]:
                 his = run.history()
+                #print(his.keys())
                 step = his['_step'].to_numpy()
                 max_step = max(max_step, step[-1])
                 n_steps = min(n_steps, len(step))
                 y = his[var_name].to_numpy()
+                step = step[~np.isnan(y)]
+                y = y[~np.isnan(y)]
                 ys.append(y)
+
             self.plot_with_ci(ax, 
                         step, 
                         np.array(ys),
