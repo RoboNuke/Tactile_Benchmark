@@ -1,7 +1,7 @@
 #!/bin/bash
 SESSION_NAME="Fragile_Baseline"
 NUM_WINDOWS=10
-gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/launch.bash"
+gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_launch.bash"
 tmux new-session -d -s "$SESSION_NAME"
 
 for i in $(seq 1 $NUM_WINDOWS); do

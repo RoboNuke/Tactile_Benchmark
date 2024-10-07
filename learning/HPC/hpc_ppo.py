@@ -1,3 +1,9 @@
+import sys
+
+# Add the folder path
+folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
+sys.path.append(folder_path)
+
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppo_continuous_actionpy
 from collections import defaultdict
 import os

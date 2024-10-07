@@ -1,24 +1,128 @@
-#!/bin/bash
+# logging data
+wandb_entity="hur"
+#wandb_project_name="In-Contact_Baseline"
+wandb_project_name="Tester"
+save_model=1
+capture_video=1
 
-#!/bin/bash
-#SBATCH -J batchTest			# name of job
-##SBATCH -A mySponsoredAccount	# name of my sponsored account, e.g. class or research group, NOT ONID!
-#SBATCH -p preempt				# name of partition or queue
-#SBATCH --time=0-5:00:00        # time limit on job: 2 days, 12 hours, 30 minutes (default 12 hours)
-#SBATCH -N 1                    # number of nodes (default 1)
-#SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
-#SBATCH --mem=32G               # request 10 gigabytes memory (per node, default depends on node)
-##SBATCH --constraint=ib        # request node with infiniband
-##SBATCH --constraint=avx512    # request node with AVX512 instruction set
-##SBATCH --constraint=a40       # request node with A40 GPU
+# create folder for this round of experiments
+gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
 
 
-# load any software environment module required for app (e.g. matlab, gcc, cuda)
-module load cuda/10.1
-eval "$(conda activate mani)"
+# shared learning data
+#env_id="PegInsertionSide-v1"
+#env_id="FragilePegInsert-v1"
+if [ "$4" = 'rgb' ] || [ "$4" = 'rgb_no_ft' ]; then
+    num_envs=128
+else
+    num_envs=256
+fi
 
-#hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
-# run my job (e.g. matlab, python)
-bash /nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/10_launch_tmux.bash 1 1 "FragilePegInsert-v1" \
-    state_dict 100 testerMcTesty 150 500000 pd_joint_delta_pos \
-    normalized_dense FFN
+#num_envs=16
+#total_timesteps=5000
+eval_freq=10
+
+update_epochs=8
+num_minibatches=8
+partial_reset=1
+reconfiguration_freq=1
+reward_scale=1.0
+
+# exp data
+start=$1
+end=$2
+env_id=$3
+obs_mode=$4
+dmg_force=$5
+exp_set_name=$6 #"Stability_Baseline"
+num_steps=$7
+total_timesteps=$8
+control_mode=$9
+reward_mode=${10}
+force_encoding=${11}
+
+if [[ $obs_mode == *"no_ft"* ]]; then
+    include_force=0
+else
+    include_force=1
+fi
+
+if [[ $obs_mode == *"rgb"* ]]; then
+    include_state=0
+else
+    include_state=1
+fi
+
+date=$(date +"%Y-%m-%d_%H:%M")
+#_${date}"
+
+if [ $save_model -eq 1 ]; then
+    save_model='save_model'
+else
+    save_model='no-save-model'
+fi
+
+if [ $capture_video -eq 1 ]; then
+    capture_video='capture-video'
+else
+    capture_video='no-capture-video'
+fi
+
+if [ $partial_reset -eq 1 ]; then
+    partial_reset='partial-reset'
+else
+    partial_reset='no-partial-reset'
+fi
+
+if [ $include_force -eq 1 ]; then
+    include_force='include-force'
+else
+    include_force='no-include-force'
+fi
+
+if [ $include_state -eq 1 ]; then
+    include_state='include-state'
+else
+    include_state='no-include-state'
+fi
+
+for i in $(seq $start $end);
+do
+    #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
+    #exp_name = "pickcube_state_baseline_" + $i
+    exp_name="${exp_set_name}_${i}_${date}"
+    python -m $gpu_path \
+        --wandb-project-name=$wandb_project_name \
+        --wandb-entity=$wandb_entity \
+        --$save_model \
+        --$capture_video \
+        --env-id=$env_id \
+        --num-envs=$num_envs \
+        --num-steps=$num_steps \
+        --num_eval_steps=$num_steps \
+        --total-timesteps=$total_timesteps \
+        --eval-freq=$eval_freq \
+        --update-epochs=$update_epochs \
+        --num-minibatches=$num_minibatches \
+        --$partial_reset \
+        --reconfiguration-freq=$reconfiguration_freq \
+        --reward-scale=$reward_scale \
+        --obs-mode=$obs_mode \
+        --control-mode=$control_mode \
+        --reward-mode=$reward_mode \
+        --force-encoding=$force_encoding \
+        --$include_force \
+        --$include_state \
+        --seed=$i \
+        --exp-name=$exp_name \
+        --exp-max-dmg-force=$dmg_force
+done
+
+
+
+# store data
+#python -m data_analysis.tb_extraction $filepath state $number_of_seeds "runs/${filepath}/"
+
+# store plots
+#mkdir -p "runs/${filepath}/plots/"
+#python -m data_analysis.pd_graphing "runs/${filepath}/"
