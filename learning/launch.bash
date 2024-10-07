@@ -1,7 +1,7 @@
 # logging data
 wandb_entity="hur"
-wandb_project_name="In-Contact_Baseline"
-#wandb_project_name="Tester"
+#wandb_project_name="In-Contact_Baseline"
+wandb_project_name="Tester"
 save_model=1
 capture_video=1
 
