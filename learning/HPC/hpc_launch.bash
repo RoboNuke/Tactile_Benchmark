@@ -91,7 +91,7 @@ do
     #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
     #exp_name = "pickcube_state_baseline_" + $i
     exp_name="${exp_set_name}_${i}_${date}"
-    python -m $gpu_path \
+    python $gpu_path \
         --wandb-project-name=$wandb_project_name \
         --wandb-entity=$wandb_entity \
         --$save_model \

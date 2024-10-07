@@ -19,6 +19,6 @@ eval "$(conda activate mani)"
 
 #hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
 # run my job (e.g. matlab, python)
-bash /nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/10_launch_tmux.bash 1 1 "FragilePegInsert-v1" \
+bash /nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/10_launch_tmux.bash 1 1 "FragilePegInsert-v1"  \
     state_dict 100 testerMcTesty 150 500000 pd_joint_delta_pos \
     normalized_dense FFN
