@@ -1,6 +1,6 @@
 #!/bin/bash
 SESSION_NAME="Fragile_Baseline"
-NUM_WINDOWS=4
+NUM_WINDOWS=1
 gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_launch.bash"
 tmux new-session -d -s "$SESSION_NAME"
 
