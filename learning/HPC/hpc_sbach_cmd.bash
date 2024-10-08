@@ -10,9 +10,12 @@
 #SBATCH -o ../batchTest.out		# name of output file for this submission script
 #SBATCH -e ../batchTest.err		# name of error file for this submission script
 # load any software environment module required for app (e.g. matlab, gcc, cuda)
+
+
 module load cuda/10.1
+eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
 eval "$(conda activate mani)"
 
 #hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
 # run my job (e.g. matlab, python)
-bash learning/HPC/10_launch_tmux.bash $*
+bash learning/HPC/hpc_launch.bash $*
