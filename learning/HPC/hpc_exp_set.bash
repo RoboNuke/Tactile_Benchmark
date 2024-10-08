@@ -17,7 +17,7 @@ for control_mode in ${control_modes[@]}; do
                     for i in $(seq 1 $NUM_WINDOWS); do
                         echo $obs_type $dmg_val
                         exp_name="FPiH_peg_dmg_${dmg_val}"
-                        bash learning/HPC/hpc_sbach_cmd.bash  $i $i\
+                        sbatch learning/HPC/hpc_sbach_cmd.bash  $i $i\
                             $task \
                             $obs_type \
                             $dmg_val \
