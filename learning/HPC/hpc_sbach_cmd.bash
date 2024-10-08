@@ -14,7 +14,7 @@
 
 module load cuda/10.1
 eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
-eval "$(conda activate mani)"
+conda activate mani
 echo $CONDA_DEFAULT_ENV
 echo starting_process
 #hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
