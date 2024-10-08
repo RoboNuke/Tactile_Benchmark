@@ -14,7 +14,7 @@ for control_mode in ${control_modes[@]}; do
         for force_encoding in ${force_encodings[@]}; do
             for obs_type in ${obs_types[@]}; do
                 for dmg_val in ${dmg_vals[@]}; do 
-                    for i in $(seq 1 $NUM_WINDOWS); do
+                    for i in $(seq 1 2); do
                         echo $obs_type $dmg_val
                         exp_name="FPiH_peg_dmg_${dmg_val}"
                         sbatch learning/HPC/hpc_sbach_cmd.bash  $i $i\
