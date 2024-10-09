@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --array=1-10            # set up the array
 #SBATCH -J batchTest			# name of job
 ##SBATCH -A mySponsoredAccount	# name of my sponsored account, e.g. class or research group, NOT ONID!
 #SBATCH -p dgx2				# name of partition or queue
@@ -7,16 +8,16 @@
 #SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
 #SBATCH --mem=16G               # request 10 gigabytes memory (per node, default depends on node)
 #SBATCH -c 4                    # number of cores/threads per task (default 1)
-#SBATCH -o ../batchTest.out		# name of output file for this submission script
-#SBATCH -e ../batchTest.err		# name of error file for this submission script
+#SBATCH -o ../outs/batchTest_%A_%a.out		# name of output file for this submission script
+#SBATCH -e ../outs/batchTest_%A_%a.err		# name of error file for this submission script
 # load any software environment module required for app (e.g. matlab, gcc, cuda)
 
 
 module load cuda/10.1
 eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
 conda activate mani
-echo $CONDA_DEFAULT_ENV
-echo starting_process
+#echo $CONDA_DEFAULT_ENV
+#echo starting_process
 #hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
 # run my job (e.g. matlab, python)
-bash learning/HPC/hpc_launch.bash $*
+bash learning/HPC/hpc_launch.bash $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_ID $*
