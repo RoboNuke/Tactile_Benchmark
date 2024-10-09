@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=3-10            # set up the array
+#SBATCH --array=1-2            # set up the array
 #SBATCH -J batchTest			# name of job
 ##SBATCH -A mySponsoredAccount	# name of my sponsored account, e.g. class or research group, NOT ONID!
 #SBATCH -p dgx2				# name of partition or queue
