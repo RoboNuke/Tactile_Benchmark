@@ -24,7 +24,7 @@ from typing import Any, Dict, Union, List, Optional
 @register_env("ForeignObjectRemoval-v1", max_episode_steps=50)
 class FOREnv(BaseEnv):
 
-    SUPPORTED_ROBOTS = ["panda", "fetch"]
+    SUPPORTED_ROBOTS = ["panda", "fetch", "panda_force"]
 
     # scene vars
     scene: ManiSkillScene

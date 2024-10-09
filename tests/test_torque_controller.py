@@ -5,6 +5,9 @@ from learning.agent import *
 from wrappers.n_force_wrapper import NForceWrapper
 
 from tests.dummy_env import *
+from controllers.torque import *
+
+from copy import copy
 
 class TestTorqueController(unittest.TestCase):
     @classmethod
@@ -30,9 +33,9 @@ class TestTorqueController(unittest.TestCase):
         self.has_set = True
         self.envs = gym.make(self.env_id, 
                             num_envs=num_envs, 
-                            control_mode = "pd_joint_pos",#"joint_torque",
+                            control_mode = "joint_torque",
                             sim_backend=backend,
-                            robot_uids="panda",#_force",
+                            robot_uids="panda_force",
                             #parallel_in_single_scene=True,
                             reward_mode=reward_mode,
                             obs_mode=obs_mode,
@@ -53,7 +56,7 @@ class TestTorqueController(unittest.TestCase):
     def test_action_space(self):
         # ensures actions space is correct
         self.get_env()
-        controller = self.envs.agent.controller
+        controller = self.envs.unwrapped.agent.controller
         assert type(controller.action_space) == gym.spaces.box.Box, f'Space is of type {type(controller.action_space)}, should by gymnasium.spaces.Space'
         as_shape = controller.action_space.shape
         assert as_shape[0] == 2, f'Action space dim should is {as_shape}, should be [2,8]'
@@ -64,7 +67,7 @@ class TestTorqueController(unittest.TestCase):
     def test_single_action_space(self):
         # ensures single action space correct
         self.get_env()
-        controller = self.envs.agent.controller
+        controller = self.envs.unwrapped.agent.controller
         sas = controller.single_action_space
         assert type(sas) == gym.spaces.box.Box, f"Single Action Space type is {type(sas)}, but should be gym.spaces.Space"
         sh = sas.shape
@@ -75,7 +78,7 @@ class TestTorqueController(unittest.TestCase):
     """def test_set_drive_property(self):
         # ensures properties update for each joint
         self.get_env()
-        controller = self.envs.agent.controller
+        controller = self.envs.unwrapped.agent.controller
         for i, joint in enumerate(controller.joints):
             # for each joint check
             assert joint.drive_mode == 'force', f'Drive mode of joint {i} is {joint.drive_mode}'
@@ -85,38 +88,47 @@ class TestTorqueController(unittest.TestCase):
 
     def test_reset(self):
         self.get_env()
-        con = self.envs.agent.controller
+        con = self.envs.unwrapped.agent.controller.controllers['arm']
         start_qf = con.qf.clone()
         for i in range(10):
-            self.envs.step(self.envs.action_space.sample())
-        step = con._step
+            self.envs.step(np.ones_like(self.envs.action_space.sample()))
+        pre_reset_qf = con.qf.clone()
+        #step = con._step
         self.envs.reset()
-        assert not step == con._step, f'Step did not reset, {step} to {con._step}'
-        assert start_qf == con.qf.clone() f'Did not reset to original state'
+        end_qf = con.qf.clone()
+        #assert not step == con._step, f'Step did not reset, {step} to {con._step}'
+        assert torch.all(~(pre_reset_qf==start_qf)), f"Robot did not take actions {pre_reset_qf}"
+        assert torch.all(~(pre_reset_qf==end_qf)), f"Robot did not reset qf {end_qf} {pre_reset_qf}"
+        assert torch.all(start_qf == end_qf), f'{end_qf} Did not reset to original state {start_qf}'
         
+    def get_qfs(self, con):
+        return con.articulation.get_qf()
+    
 
     def test_partial_reset(self):
         self.get_env()
-        con = self.envs.agent.controller
-        start_qf = con.qf.clone()
+        con = self.envs.unwrapped.agent.controller.controllers['arm']
+        start_qf = con.qf
         for i in range(10):
-            self.envs.step(self.envs.action_space.sample())
-        step = con._step
+            self.envs.step(np.ones_like(self.envs.action_space.sample()))
+        #step = copy(con._step)
         self.envs.reset(options={'env_idx':[0]})
-        assert not step[0] == con._step[0], f'Env 1 step did not reset, {step[0]} to {con._step[0]}'
-        assert step[1] == con._step[1], f'Env 2 reset, {step[1]} to {con._step[1]}'
+        #assert not step[0] == con._step[0], f'Env 1 step did not reset, {step[0]} to {con._step[0]}'
+        #assert step[1] == con._step[1], f'Env 2 reset, {step[1]} to {con._step[1]}'
         qf = con.qf.clone()
-        assert start_qf[0,:] == [0,:] f'Env 1 Did not reset to original state'
-        assert not start_qf[1,:] == [1,:] f'Env 2 did reset to original state'
+        assert torch.all(start_qf[0,:] == qf[0,:]), f'Env 1 Did not reset to original state'
+        assert torch.all(~(start_qf[1,:] == qf[1,:])), f'Env 2 did reset to original state'
         
 
     def test_set_action(self):
-        init_action = []
-        final_action = [] # action after preprocessing
-
         self.get_env()
+
+        init_action = (torch.ones((2,8)) * 4.0  )/100.0
+        final_action = init_action[:,:-1]*100.0#[] # action after preprocessing
+        
         self.envs.step(init_action)
-        controller = self.envs.agent.controller
-        for i, joint in enumerate(controller.joints):
-            # for each joint check
-            assert controller.articulation.get_qf[i] == final_action[i]
+        con = self.envs.unwrapped.agent.controller.controllers['arm']
+        #for i, joint in enumerate(controller.joints):
+        # for each joint check
+        qf = con.qf.cpu()
+        assert torch.all(qf == final_action), f"qf not set properly {qf} should be {final_action}"

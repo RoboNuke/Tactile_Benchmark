@@ -9,42 +9,63 @@ from gymnasium import spaces
 from mani_skill.utils import common
 from mani_skill.utils.structs.types import Array, DriveMode
 
-from .base_controller import BaseController, ControllerConfig
+from mani_skill.agents.controllers.base_controller import BaseController, ControllerConfig, DictController, CombinedController
 
 from mani_skill.agents.controllers import *
 from mani_skill.agents.registration import register_agent
 from mani_skill.agents.robots.panda.panda import Panda
 
+from mani_skill.envs.scene import ManiSkillScene
+from mani_skill.utils.structs import Articulation
+import sapien.physx as physx
+
 @register_agent()
 class PandaForce(Panda):
     uid = "panda_force"
+    def before_simulation_step(self):
+        if type(self.controller) in [DictController, CombinedController]:
+            for controller in self.controller.controllers.values():
+                controller.before_simulation_step()
+        else:
+            super().before_simulation_step()
+
+    @property
     def _controller_configs(self):
-        base_controller_configs = super()._controller_configs()
+        base_controller_configs = super()._controller_configs
 
         arm_joint_torque = TorqueJointControllerConfig(
-            self.arm_joint_names,
-            -0.1,
-            0.1,
-            self.arm_stiffness,
-            self.arm_damping,
-            self.arm_force_limit,
-            use_delta=True,
-
+            joint_names=self.arm_joint_names,
+            lower=-self.arm_force_limit,
+            upper=self.arm_force_limit,
+            max_saturation=1.0,
+            use_delta=False,
         )
 
         base_controller_configs['joint_torque'] = dict(
             arm = arm_joint_torque,
             gripper = base_controller_configs['pd_joint_delta_pos']['gripper'] 
         )
-
         return deepcopy_dict(base_controller_configs)
-
-
 
 class TorqueJointController(BaseController):
     config: "TorqueJointControllerConfig"
-    _start_qf = None
     _target_qf = None
+    _qf_error = None
+    _start_qf = None
+    _full_qf = None
+    def __init__(
+        self,
+        config: "ControllerConfig",
+        articulation: Articulation,
+        control_freq: int,
+        sim_freq: int = None,
+        scene: ManiSkillScene = None,
+    ):
+        super().__init__(config, articulation, control_freq, sim_freq, scene)
+        """self._start_qf = torch.zeros_like(self.qf)
+        self._target_qf = torch.zeros_like(self.qf)
+        self._qf_error = torch.zeros_like(self.qf)
+        self._start_qf = torch.zeros_like(self.qf)"""
 
     def _get_joint_limits(self):
         qlimits = (
@@ -69,26 +90,16 @@ class TorqueJointController(BaseController):
     def set_drive_property(self):
         """
             Set drive properties
-            - stiffness
-            - damping
-            - force_limits
-            - friction
+            - max_saturation (max change per step in torque)
+            - torque limit
             Then sets each joints properties
         """
         n = len(self.joints)
-        stiffness = np.broadcast_to(self.config.stiffness, n)
-        damping = np.broadcast_to(self.config.damping, n)
-        force_limit = np.broadcast_to(self.config.force_limit, n)
-        friction = np.broadcast_to(self.config.friction, n)
-
-        for i, joint in enumerate(self.joints):
-            drive_mode = self.config.drive_mode
-            if not isinstance(drive_mode, str):
-                drive_mode = drive_mode[i]
-            joint.set_drive_properties(
-                stiffness[i], damping[i], force_limit=force_limit[i], mode=drive_mode
-            )
-            joint.set_friction(friction[i])
+        #self.force_limit = np.broadcast_to(self.config.force_limit, n)
+        self.max_sat = torch.ones(n, 
+                dtype=torch.float32,
+                device=self.scene.device
+            ) * self.config.max_saturation
 
     def reset(self):
         """
@@ -96,7 +107,23 @@ class TorqueJointController(BaseController):
             This is called upon environment creation 
             and each environment reset
         """
-        pass
+        super().reset()
+        self._step=0
+        if self._full_qf is None:
+            self._full_qf = self.articulation.get_qf()
+
+        if self._start_qf is None:
+            self._start_qf = self.qf.clone()
+        else:
+            self._start_qf[self.scene._reset_mask] = self.qf[
+                    self.scene._reset_mask
+            ].clone()
+        if self._target_qf is None:
+            self._target_qf = self.qf.clone()
+        else:
+            self._target_qf[self.scene._reset_mask] = self.qf[
+                self.scene._reset_mask
+            ].clone()
 
     def set_action(self, action: Array):
         """
@@ -106,46 +133,64 @@ class TorqueJointController(BaseController):
         """
         action = self._preprocess_action(action)
         action = common.to_tensor(action)
-        pass
+        self._start_qf = self.qf
+        
+        if self.config.use_delta:
+            if self.config.use_target:
+                self._target_qf = self._target_qf + action
+            else:
+                self._target_qf = self._start_qf + action
+        else:
+            # Compatible with mimic controllers. Need to clone here 
+            # otherwise cannot do in-place replacements in the reset 
+            # function
+            self._target_qf = torch.broadcast_to(
+                action, self._start_qf.shape
+            ).clone() 
 
     def get_state(self) -> dict:
         """ Returns the targets """
-        pass
+        if self.config.use_target:
+            return {"target_qf": self._target_qf}
+        return {}
 
     def set_state(self, state: dict):
         """ Sets the targets """
-        pass
-
-    def _get_joint_limits(self):
-        qlimits = (
-            self.articulation.get_qlimits()[0, self.active_joint_indices].cpu().numpy()
-        )
-        # Override if specified
-        if self.config.lower is not None:
-            qlimits[:, 0] = self.config.lower
-        if self.config.upper is not None:
-            qlimits[:, 1] = self.config.upper
-        return qlimits
+        if self.config.use_target:
+            self._target_qf = state["target_qf"]
 
     def set_drive_targets(self, targets):
         """ Set target for each joint """
-        pass
+        self._target_qf = targets
 
+    @property
+    def qf(self):
+        return self.articulation.get_qf()[:,self.active_joint_indices]
+    
     def before_simulation_step(self):
-        self._step += 1
+        self._qf_error = self._target_qf - self.qf
+
+        # clip error
+        self._qf_error = torch.clamp(self._qf_error, 
+                                    -self.max_sat,
+                                    self.max_sat
+        )
+        # set new qf
+        self._full_qf[:,self.active_joint_indices] = self.qf + self._qf_error
+        self.articulation.set_qf(self._full_qf)
+
+        if type(self.scene.px) == physx.PhysxGpuSystem:
+            self.scene.px.gpu_apply_articulation_qf()
 
 
 @dataclass
 class TorqueJointControllerConfig(ControllerConfig):
     lower: Union[None, float, Sequence[float]]
     upper: Union[None, float, Sequence[float]]
-    stiffness: Union[float, Sequence[float]]
-    damping: Union[float, Sequence[float]]
-    force_limit: Union[float, Sequence[float]] = 1e10
-    friction: Union[float, Sequence[float]] = 0.0
+    max_saturation: float = 10.0
     use_delta: bool = False
     use_target: bool = False
-    interpolate: bool = False
+    #interpolate: bool = False
     normalize_action: bool = True
     drive_mode: Union[Sequence[DriveMode], DriveMode] = "force"
     controller_cls = TorqueJointController

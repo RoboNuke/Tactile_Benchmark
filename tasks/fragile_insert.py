@@ -12,7 +12,7 @@ from mani_skill.utils.structs.actor import Actor
 @register_env("FragilePegInsert-v1", max_episode_steps=150)
 class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 500.0
-    SUPPORTED_ROBOTS = ["panda", "fetch"]
+    SUPPORTED_ROBOTS = ["panda", "fetch", "panda_force"]
     
     def __init__(self, *args, obs_mode='state', dmg_force=500.0, **kwargs):
         # handle the ft stuff
