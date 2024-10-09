@@ -3,7 +3,7 @@ num_steps=150
 total_timesteps=25000000
 
 obs_types=("state_dict" "state_dict_no_ft") # "rgb" "rgb_no_ft")
-dmg_vals=("100.0" "50.0" "250.0" "100.0") # "500.0" "100000.0") 
+dmg_vals=("500.0") #"100.0" "50.0" "250.0") # "500.0" "100000.0") 
 control_modes=("pd_joint_delta_pos")
 reward_modes=("normalized_dense")
 force_encodings=("FFN")
