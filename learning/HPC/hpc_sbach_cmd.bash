@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --array=1-2            # set up the array
-#SBATCH -J batchTest			# name of job
-##SBATCH -A mySponsoredAccount	# name of my sponsored account, e.g. class or research group, NOT ONID!
-#SBATCH -p dgx2				# name of partition or queue
+#SBATCH --array=1-2             # set up the array
+#SBATCH -J ViRLTest			    # name of job
+#SBATCH -A virl-grp	            # name of my sponsored account, e.g. class or research group, NOT ONID!
+#SBATCH -p eecs2				# name of partition or queue
 #SBATCH --time=0-3:30:00        # time limit on job: 2 days, 12 hours, 30 minutes (default 12 hours)
-##SBATCH -N 1                    # number of nodes (default 1)
+##SBATCH -N 1                   # number of nodes (default 1)
 #SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
 #SBATCH --mem=16G               # request 10 gigabytes memory (per node, default depends on node)
 #SBATCH -c 4                    # number of cores/threads per task (default 1)
