@@ -272,7 +272,7 @@ class DataManager():
 
         # Plot the data and the confidence interval
         ax.plot(x, y_mean, 
-                f'{color}', 
+                color = color, 
                 label=data_name)
         ax.fill_between(x, 
                         y_mean - ci, 
