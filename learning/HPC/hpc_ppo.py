@@ -3,8 +3,8 @@ import sys
 import torch.multiprocessing.spawn
 
 # Add the folder path
-#folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
-folder_path = "/home/hunter/Tactile_Benchmark"
+folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
+#folder_path = "/home/hunter/Tactile_Benchmark"
 sys.path.append(folder_path)
 
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppo_continuous_actionpy

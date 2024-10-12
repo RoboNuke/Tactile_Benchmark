@@ -16,8 +16,8 @@ for control_mode in ${control_modes[@]}; do
                     echo $obs_type $dmg_val
                     #exp_name="FPiH_peg_dmg_${dmg_val}"
                     exp_name="TesterMcTestFace"
-                    #sbatch learning/HPC/hpc_sbach_cmd.bash \
-                    bash learning/HPC/hpc_launch.bash \
+                    #bash learning/HPC/hpc_launch.bash \
+                    sbatch learning/HPC/hpc_sbach_cmd.bash \
                         $task \
                         $obs_type \
                         $dmg_val \
