@@ -20,4 +20,4 @@ conda activate mani
 #echo starting_process
 #hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
 # run my job (e.g. matlab, python)
-bash learning/HPC/hpc_launch.bash $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_ID $*
+bash learning/HPC/hpc_launch.bash $*

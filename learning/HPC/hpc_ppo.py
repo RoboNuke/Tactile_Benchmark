@@ -1,7 +1,10 @@
 import sys
 
+import torch.multiprocessing.spawn
+
 # Add the folder path
-folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
+#folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
+folder_path = "/home/hunter/Tactile_Benchmark"
 sys.path.append(folder_path)
 
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppo_continuous_actionpy
@@ -49,9 +52,9 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = "hur"
     """the entity (team) of wandb's project"""
-    capture_video: bool = True
+    capture_video: bool = False
     """whether to capture videos of the agent performances (check out `videos` folder)"""
-    save_model: bool = True
+    save_model: bool = False
     """whether to save model into the `runs/{run_name}` folder"""
     evaluate: bool = False
     """if toggled, only runs evaluation with the given model checkpoint and saves the evaluation trajectories"""
@@ -189,21 +192,22 @@ def log_smothness(data: Dict, logger: DataManager, step, fold='train'):
         logger.add_scalar({f'{fold}/{k}': raw.mean()}, step)
 
 
-if __name__ == "__main__":
-    args = tyro.cli(Args)
+def train_env(proc_idx, args):
+    print(args)
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
     if args.exp_name is None:
         args.exp_name = os.path.basename(__file__)[: -len(".py")]
-        run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+        run_name = f"{args.env_id}__{args.exp_name}__{proc_idx}__{int(time.time())}"
     else:
-        run_name = args.exp_name
+        run_name = f"{args.exp_name}__{proc_idx}__{int(time.time())}"
+    
 
     # TRY NOT TO MODIFY: seeding
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    random.seed(proc_idx)
+    np.random.seed(proc_idx)
+    torch.manual_seed(proc_idx)
     torch.backends.cudnn.deterministic = args.torch_deterministic
 
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
@@ -350,8 +354,8 @@ if __name__ == "__main__":
     # TRY NOT TO MODIFY: start the game
     global_step = 0
     start_time = time.time()
-    next_obs, _ = envs.reset(seed=args.seed)
-    eval_obs, _ = eval_envs.reset(seed=args.seed)
+    next_obs, _ = envs.reset(seed=proc_idx)
+    eval_obs, _ = eval_envs.reset(seed=proc_idx)
     next_done = torch.zeros(args.num_envs, device=device)
     eps_returns = torch.zeros(args.num_envs, dtype=torch.float, device=device)
     eps_lens = np.zeros(args.num_envs)
@@ -731,3 +735,12 @@ if __name__ == "__main__":
     envs.close()
     if logger is not None: 
         logger.finish()
+
+import torch.multiprocessing
+
+if __name__=="__main__":
+    args = tyro.cli(Args)
+    #torch.set_num_interop_threads(1)
+    #torch.set_num_threads(2)
+    #torch.multiprocessing.spawn(train_env, [args], 1, True)
+    train_env(0, args)

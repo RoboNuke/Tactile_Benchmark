@@ -6,8 +6,8 @@ save_model=1
 capture_video=1
 
 # create folder for this round of experiments
-gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
-
+#gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
+gpu_path="/home/hunter/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
 
 # shared learning data
 #env_id="PegInsertionSide-v1"
@@ -29,17 +29,15 @@ reconfiguration_freq=1
 reward_scale=1.0
 
 # exp data
-start=$1
-end=$2
-env_id=$3
-obs_mode=$4
-dmg_force=$5
-exp_set_name=$6 #"Stability_Baseline"
-num_steps=$7
-total_timesteps=$8
-control_mode=$9
-reward_mode=${10}
-force_encoding=${11}
+env_id=$1
+obs_mode=$2
+dmg_force=$3
+exp_set_name=$4 #"Stability_Baseline"
+num_steps=$5
+total_timesteps=$6
+control_mode=$7
+reward_mode=$8
+force_encoding=$9
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
@@ -86,37 +84,36 @@ else
     include_state='no-include-state'
 fi
 
-for i in $(seq $start $end);
-do
-    #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
-    #exp_name = "pickcube_state_baseline_" + $i
-    exp_name="${exp_set_name}_${i}_${date}"
-    python $gpu_path \
-        --wandb-project-name=$wandb_project_name \
-        --wandb-entity=$wandb_entity \
-        --$save_model \
-        --$capture_video \
-        --env-id=$env_id \
-        --num-envs=$num_envs \
-        --num-steps=$num_steps \
-        --num_eval_steps=$num_steps \
-        --total-timesteps=$total_timesteps \
-        --eval-freq=$eval_freq \
-        --update-epochs=$update_epochs \
-        --num-minibatches=$num_minibatches \
-        --$partial_reset \
-        --reconfiguration-freq=$reconfiguration_freq \
-        --reward-scale=$reward_scale \
-        --obs-mode=$obs_mode \
-        --control-mode=$control_mode \
-        --reward-mode=$reward_mode \
-        --force-encoding=$force_encoding \
-        --$include_force \
-        --$include_state \
-        --seed=$i \
-        --exp-name=$exp_name \
-        --exp-max-dmg-force=$dmg_force
-done
+
+#printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
+#exp_name = "pickcube_state_baseline_" + $i
+exp_name="${exp_set_name}_${i}_${date}"
+
+python $gpu_path \
+    --wandb-project-name=$wandb_project_name \
+    --wandb-entity=$wandb_entity \
+    --$save_model \
+    --$capture_video \
+    --env-id=$env_id \
+    --num-envs=$num_envs \
+    --num-steps=$num_steps \
+    --num_eval_steps=$num_steps \
+    --total-timesteps=$total_timesteps \
+    --eval-freq=$eval_freq \
+    --update-epochs=$update_epochs \
+    --num-minibatches=$num_minibatches \
+    --$partial_reset \
+    --reconfiguration-freq=$reconfiguration_freq \
+    --reward-scale=$reward_scale \
+    --obs-mode=$obs_mode \
+    --control-mode=$control_mode \
+    --reward-mode=$reward_mode \
+    --force-encoding=$force_encoding \
+    --$include_force \
+    --$include_state \
+    --seed=0 \
+    --exp-max-dmg-force=$dmg_force
+    #--exp-name=$exp_name \
 
 
 
