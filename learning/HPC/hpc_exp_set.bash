@@ -1,6 +1,6 @@
 task="FragilePegInsert-v1"
 num_steps=150
-total_timesteps=50000
+total_timesteps=500000
 
 obs_types=("state_dict_no_ft") # "state_dict_no_ft") # "rgb" "rgb_no_ft")
 dmg_vals=("100000.0") #"500.0" "100.0" "50.0" "250.0" 

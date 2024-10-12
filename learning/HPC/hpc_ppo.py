@@ -742,5 +742,5 @@ if __name__=="__main__":
     args = tyro.cli(Args)
     #torch.set_num_interop_threads(1)
     #torch.set_num_threads(2)
-    #torch.multiprocessing.spawn(train_env, [args], 1, True)
-    train_env(0, args)
+    torch.multiprocessing.spawn(train_env, [args], 3, True)
+    #train_env(0, args)

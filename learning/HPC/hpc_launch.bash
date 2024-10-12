@@ -7,7 +7,7 @@ capture_video=1
 
 # create folder for this round of experiments
 #gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
-gpu_path="/home/hunter/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
+gpu_path="learning/HPC/hpc_ppo.py"
 
 # shared learning data
 #env_id="PegInsertionSide-v1"
@@ -89,7 +89,7 @@ fi
 #exp_name = "pickcube_state_baseline_" + $i
 exp_name="${exp_set_name}_${i}_${date}"
 
-python $gpu_path \
+python -m learning.HPC.hpc_ppo \
     --wandb-project-name=$wandb_project_name \
     --wandb-entity=$wandb_entity \
     --$save_model \
