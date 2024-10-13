@@ -143,6 +143,127 @@ class NatureCNN(nn.Module):
             encoded_tensor_list.append(extractor(obs))
         return torch.cat(encoded_tensor_list, dim=1)
     
+import torch.multiprocessing as mp
+import time
+class MultiAgent(nn.Module):
+    def __init__(self, num_agents, envs, sample_obs, force_type='FFN'):
+        # init n agents and parallelize their training/action selection
+        self.n_agents = num_agents
+        self.n_envs = envs.unwrapped.num_envs
+        
+        self.device = envs.unwrapped.device
+        self.agents = [ Agent(envs, sample_obs, force_type).to(self.device) for i in range(self.n_agents) ]
+        ##for agent in self.agents:
+        #    agent.share_memory()
+        self.feat_size = self.agents[0].feature_net.out_features
+        self.action_size = np.prod(envs.unwrapped.single_action_space.shape)
+
+    def train(self):
+        for agent in self.agents:
+            agent.train()
+    
+    def eval(self):
+        for agent in self.agents:
+            agent.eval()
+
+    def mp_funct(self, funct, *args):
+        ps = []
+        arg_list = list(args)
+        arg_list.insert(0, 0)
+        for i in range(self.n_agents):
+            arg_list[0] = i
+            p = mp.Process(
+                target=getattr(self, funct),
+                args=arg_list
+            )
+            p.start()
+            ps.append(p)
+        for p in ps:
+            p.join() 
+        
+    def print_test(self, idx, x, boo):
+        s,f = self.get_start_fin(idx, x)
+        self.agents[idx].print_test(x[s:f], boo)
+
+    def get_start_fin(self, idx, x):
+        s = idx * self.step
+        f = ( idx + 1 ) * self.step
+        return s, f
+    
+    def get_obs(self, x, s, f):
+        obs = {}
+        for key, val in x.items():
+            obs[key] = val[s:f, :]
+        return obs
+
+    def get_features(self, x):
+        n = x[[key for key in x.keys()][0]].size()[0]
+        self.feat_out = torch.zeros(
+            (n, self.feat_size), 
+            dtype=torch.float32, 
+            device=self.device
+        )
+        self.step = n // self.n_agents
+        for i in range(self.n_agents):
+            s,f = self.get_start_fin(i, x)
+            obs = self.get_obs(x,s,f)
+            self.feat_out[s:f, :] = self.agents[i].get_features(obs)
+        #self.mp_funct("call_get_features", x)
+        return self.feat_out
+
+    def get_value(self, x):
+        n = x[[key for key in x.keys()][0]].size()[0]
+        self.v_out = torch.zeros(
+            (n, 1),
+            dtype=torch.float32,
+            device = self.device
+        )
+        self.step = n // self.n_agents
+        for i in range(self.n_agents):
+            s,f = self.get_start_fin(i, x)
+            obs = self.get_obs(x, s, f)
+            self.v_out[s:f, :] = self.agents[i].get_value(obs)
+            
+        return self.v_out
+
+    def get_action(self, x, deterministic=False):
+        n = x[[key for key in x.keys()][0]].size()[0]
+        self.action_out = torch.zeros(
+            (n, self.action_size),
+            dtype=torch.float32,
+            device = self.device
+        )
+        self.step = n // self.n_agents
+        for i in range(self.n_agents):
+            s,f = self.get_start_fin(i, x)
+            obs = self.get_obs(x, s, f)
+            self.action_out[s:f, :] = self.agents[i].get_action(obs, deterministic)
+        return self.action_out
+
+    def get_action_and_value(self, x, action=None):
+        n = x[[key for key in x.keys()][0]].size()[0]
+        ao = torch.zeros(
+            (n, self.action_size),
+            dtype=torch.float32,
+            device = self.device
+        )
+        po = torch.zeros(
+            (n, 1),
+            dtype=torch.float32,
+            device = self.device
+        )
+        eo = torch.zeros_like(po)
+        co = torch.zeros_like(po)
+        self.step = n // self.n_agents
+        for i in range(self.n_agents):
+            s,f = self.get_start_fin(i, x)
+            obs = self.get_obs(x, s, f)
+            if action is None:
+                ao[s:f,:], po.T[:,s:f], eo.T[:,s:f], co[s:f,:] = self.agents[i].get_action_and_value(obs, None)
+            else:
+                ao[s:f,:], po.T[:,s:f], eo.T[:,s:f], co[s:f,:] = self.agents[i].get_action_and_value(obs, action[s:f,:])
+
+        return ao, po.T, eo, co
 
 class Agent(nn.Module):
     def __init__(self, envs, sample_obs, force_type='FFN'):
@@ -161,11 +282,19 @@ class Agent(nn.Module):
             layer_init(nn.Linear(512, np.prod(envs.unwrapped.single_action_space.shape)), std=0.01*np.sqrt(2)),
         )
         self.actor_logstd = nn.Parameter(torch.ones(1, np.prod(envs.unwrapped.single_action_space.shape)) * -0.5)
+
+    def print_test(self, x, boo):
+        #print(f"\tStarting test:{x} with {boo}")
+        time.sleep(10 - x.item())
+        #print(f"\tComplete: {x}, with {boo}")   
+
     def get_features(self, x):
         return self.feature_net(x)
+    
     def get_value(self, x):
         x = self.feature_net(x)
         return self.critic(x)
+    
     def get_action(self, x, deterministic=False):
         x = self.feature_net(x)
         action_mean = self.actor_mean(x)
@@ -175,6 +304,7 @@ class Agent(nn.Module):
         action_std = torch.exp(action_logstd)
         probs = Normal(action_mean, action_std)
         return probs.sample()
+    
     def get_action_and_value(self, x, action=None):
         x = self.feature_net(x)
         action_mean = self.actor_mean(x)

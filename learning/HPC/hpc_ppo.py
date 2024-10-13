@@ -64,7 +64,9 @@ class Args:
     """the environment rendering mode"""
 
     # exp specific info
-    obs_mode: str = 'rgb'
+    num_agents: int = 6
+    """ How many agents to train in parallel"""
+    obs_mode: str = 'state_dict'
     """the observation mode for the robot"""
     control_mode: str = 'pd_joint_delta_pos'
     """the action space or control mode"""
@@ -80,11 +82,11 @@ class Args:
     """ Force to break the peg or the table """
 
     # Algorithm specific arguments
-    env_id: str = "PickCube-v1"
+    env_id: str = "FragilePegInsert-v1"
     """the id of the environment"""
     include_state: bool = True
     """whether to include state information in observations"""
-    total_timesteps: int = 10000
+    total_timesteps: int = 500000
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
@@ -94,9 +96,9 @@ class Args:
     """the number of parallel evaluation environments"""
     partial_reset: bool = True
     """whether to let parallel environments reset upon termination instead of truncation"""
-    num_steps: int = 50
+    num_steps: int = 150
     """the number of steps to run in each environment per policy rollout"""
-    num_eval_steps: int = 50
+    num_eval_steps: int = 150
     """the number of steps to run in each evaluation environment during evaluation"""
     reconfiguration_freq: Optional[int] = 1
     """for benchmarking purposes we want to reconfigure the eval environment each reset to ensure objects are randomized in some tasks"""
@@ -192,22 +194,25 @@ def log_smothness(data: Dict, logger: DataManager, step, fold='train'):
         logger.add_scalar({f'{fold}/{k}': raw.mean()}, step)
 
 
-def train_env(proc_idx, args):
-    print(args)
+if __name__=="__main__":
+    args = tyro.cli(Args)
+    args.total_timesteps *= args.num_agents
+    tot_num_eval_envs = args.num_eval_envs * args.num_agents
+    tot_num_envs = args.num_envs * args.num_agents
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
     if args.exp_name is None:
         args.exp_name = os.path.basename(__file__)[: -len(".py")]
-        run_name = f"{args.env_id}__{args.exp_name}__{proc_idx}__{int(time.time())}"
+        run_name = f"{args.env_id}__{args.exp_name}__{int(time.time())}"
     else:
-        run_name = f"{args.exp_name}__{proc_idx}__{int(time.time())}"
+        run_name = f"{args.exp_name}__{int(time.time())}"
     
 
     # TRY NOT TO MODIFY: seeding
-    random.seed(proc_idx)
-    np.random.seed(proc_idx)
-    torch.manual_seed(proc_idx)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = args.torch_deterministic
 
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
@@ -221,16 +226,15 @@ def train_env(proc_idx, args):
         sim_backend="gpu",
         dmg_force=args.exp_max_dmg_force
     )
-
     eval_envs = gym.make(
         args.env_id, 
-        num_envs=args.num_eval_envs, 
+        num_envs=tot_num_eval_envs, 
         **env_kwargs
     )
     
     envs = gym.make(
         args.env_id, 
-        num_envs=args.num_envs if not args.evaluate else 1, 
+        num_envs=tot_num_envs if not args.evaluate else 1, 
         **env_kwargs
     )
 
@@ -329,13 +333,13 @@ def train_env(proc_idx, args):
     
     envs = ManiSkillVectorEnv(
         envs, 
-        args.num_envs, 
+        tot_num_envs, 
         ignore_terminations=False, 
         record_metrics=True
     )
     eval_envs = ManiSkillVectorEnv(
         eval_envs, 
-        args.num_eval_envs, 
+        tot_num_eval_envs, 
         ignore_terminations=False, 
         record_metrics=True
     )
@@ -344,38 +348,38 @@ def train_env(proc_idx, args):
 
     
     # ALGO Logic: Storage setup
-    obs = DictArray((args.num_steps, args.num_envs), envs.single_observation_space, device=device)
-    actions = torch.zeros((args.num_steps, args.num_envs) + envs.single_action_space.shape).to(device)
-    logprobs = torch.zeros((args.num_steps, args.num_envs)).to(device)
-    rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)
-    dones = torch.zeros((args.num_steps, args.num_envs)).to(device)
-    values = torch.zeros((args.num_steps, args.num_envs)).to(device)
+    obs = DictArray((args.num_steps, tot_num_envs), envs.single_observation_space, device=device)
+    actions = torch.zeros((args.num_steps, tot_num_envs) + envs.single_action_space.shape).to(device)
+    logprobs = torch.zeros((args.num_steps, tot_num_envs)).to(device)
+    rewards = torch.zeros((args.num_steps, tot_num_envs)).to(device)
+    dones = torch.zeros((args.num_steps, tot_num_envs)).to(device)
+    values = torch.zeros((args.num_steps, tot_num_envs)).to(device)
 
     # TRY NOT TO MODIFY: start the game
     global_step = 0
     start_time = time.time()
-    next_obs, _ = envs.reset(seed=proc_idx)
-    eval_obs, _ = eval_envs.reset(seed=proc_idx)
-    next_done = torch.zeros(args.num_envs, device=device)
-    eps_returns = torch.zeros(args.num_envs, dtype=torch.float, device=device)
-    eps_lens = np.zeros(args.num_envs)
-    place_rew = torch.zeros(args.num_envs, device=device)
+    next_obs, _ = envs.reset(seed=args.seed)
+    eval_obs, _ = eval_envs.reset(seed=args.seed)
+    next_done = torch.zeros(tot_num_envs, device=device)
+    eps_returns = torch.zeros(tot_num_envs, dtype=torch.float, device=device)
+    eps_lens = np.zeros(tot_num_envs)
+    place_rew = torch.zeros(tot_num_envs, device=device)
     print(f"####")
-    print(f"args.num_iterations={args.num_iterations} args.num_envs={args.num_envs} args.num_eval_envs={args.num_eval_envs}")
+    print(f"args.num_iterations={args.num_iterations} tot_num_envs={tot_num_envs} tot_num_eval_envs={tot_num_eval_envs}")
     print(f"args.minibatch_size={args.minibatch_size} args.batch_size={args.batch_size} args.update_epochs={args.update_epochs}")
     print(f"####")
 
     # add some stuff for logging
-    eval_returns = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
-    eval_reward = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device) # avg reward
-    eval_episode_lens = torch.zeros(args.num_eval_envs, dtype=torch.int32, device=device)
-    eval_succs = torch.zeros(args.num_eval_envs, dtype=torch.bool, device=device)
-    eval_fails = torch.zeros(args.num_eval_envs, dtype=torch.bool, device=device)
-    eval_dones = torch.zeros(args.num_eval_envs, dtype=torch.bool, device=device)
+    eval_returns = torch.zeros(tot_num_eval_envs, dtype=torch.float32, device=device)
+    eval_reward = torch.zeros(tot_num_eval_envs, dtype=torch.float32, device=device) # avg reward
+    eval_episode_lens = torch.zeros(tot_num_eval_envs, dtype=torch.int32, device=device)
+    eval_succs = torch.zeros(tot_num_eval_envs, dtype=torch.bool, device=device)
+    eval_fails = torch.zeros(tot_num_eval_envs, dtype=torch.bool, device=device)
+    eval_dones = torch.zeros(tot_num_eval_envs, dtype=torch.bool, device=device)
 
-    eval_ssv = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
-    eval_ssj = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
-    eval_max_dmg_force = torch.zeros(args.num_eval_envs, dtype=torch.float32, device=device)
+    eval_ssv = torch.zeros(tot_num_eval_envs, dtype=torch.float32, device=device)
+    eval_ssj = torch.zeros(tot_num_eval_envs, dtype=torch.float32, device=device)
+    eval_max_dmg_force = torch.zeros(tot_num_eval_envs, dtype=torch.float32, device=device)
     eval_metrics = {
         'eval/returns':eval_returns,
         'eval/reward':eval_reward,
@@ -387,15 +391,15 @@ def train_env(proc_idx, args):
         'eval_smoothness/avg_max_force': eval_max_dmg_force,
     }
     # add some stuff for logging
-    train_returns = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
-    train_reward = torch.zeros(args.num_envs, dtype=torch.float32, device=device) # avg reward
-    train_episode_lens = torch.zeros(args.num_envs, dtype=torch.int32, device=device)
-    train_succs = torch.zeros(args.num_envs, dtype=torch.bool, device=device)
-    train_fails = torch.zeros(args.num_envs, dtype=torch.bool, device=device)
-    train_dones = torch.zeros(args.num_envs, dtype=torch.bool, device=device)
-    train_ssv = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
-    train_ssj = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
-    train_max_dmg_force = torch.zeros(args.num_envs, dtype=torch.float32, device=device)
+    train_returns = torch.zeros(tot_num_envs, dtype=torch.float32, device=device)
+    train_reward = torch.zeros(tot_num_envs, dtype=torch.float32, device=device) # avg reward
+    train_episode_lens = torch.zeros(tot_num_envs, dtype=torch.int32, device=device)
+    train_succs = torch.zeros(tot_num_envs, dtype=torch.bool, device=device)
+    train_fails = torch.zeros(tot_num_envs, dtype=torch.bool, device=device)
+    train_dones = torch.zeros(tot_num_envs, dtype=torch.bool, device=device)
+    train_ssv = torch.zeros(tot_num_envs, dtype=torch.float32, device=device)
+    train_ssj = torch.zeros(tot_num_envs, dtype=torch.float32, device=device)
+    train_max_dmg_force = torch.zeros(tot_num_envs, dtype=torch.float32, device=device)
     
     train_metrics = {
         'train/returns':train_returns,
@@ -408,13 +412,23 @@ def train_env(proc_idx, args):
         'train_smoothness/avg_max_force': train_max_dmg_force,
     }
 
-    agent = Agent(
-        envs, 
-        sample_obs=next_obs, 
-        force_type=args.force_encoding
-    ).to(device)
+    if args.num_agents == 1:
+        agent = Agent(
+            envs, 
+            sample_obs=next_obs, 
+            force_type=args.force_encoding
+        ).to(device)
 
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
+        optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
+    else:
+        agent = MultiAgent(
+            args.num_agents,
+            envs,
+            sample_obs=next_obs,
+            force_type=args.force_encoding
+        )#.to(device)
+        optimizers = [optim.Adam(ag.parameters(), lr=args.learning_rate, eps=1e-5) for ag in agent.agents]
+
 
     if args.checkpoint:
         agent.load_state_dict(torch.load(args.checkpoint))
@@ -422,9 +436,9 @@ def train_env(proc_idx, args):
     eval_count = 0
     for iteration in range(1, args.num_iterations + 1):
         print(f"Epoch: {iteration}, global_step={global_step}")
-        final_values = torch.zeros((args.num_steps, args.num_envs), device=device)
+        final_values = torch.zeros((args.num_steps, tot_num_envs), device=device)
         agent.eval()
-        if iteration % args.eval_freq == 1 or iteration==args.num_iterations:
+        if False: #iteration % args.eval_freq == 1 or iteration==args.num_iterations:
             print("Evaluating")
             eval_obs, _ = eval_envs.reset()
             #eval_metrics = defaultdict(list)
@@ -473,7 +487,7 @@ def train_env(proc_idx, args):
                 eval_returns[mask] = fin_eps['r'][mask]
                 eval_reward[mask] = eval_returns[mask] / eval_episode_lens[mask]
 
-            print(f"Evaluated {args.num_eval_steps * args.num_eval_envs} steps resulting in {len(eps_lens)} episodes")
+            print(f"Evaluated {args.num_eval_steps * tot_num_eval_envs} steps resulting in {len(eps_lens)} episodes")
             for k, v in eval_metrics.items():
                 #print(k,v)
                 mean = v.cpu().float().mean()
@@ -512,7 +526,7 @@ def train_env(proc_idx, args):
         rollout_time = time.time()
         next_obs, _ = envs.reset()
         for step in range(0, args.num_steps):
-            global_step += args.num_envs
+            global_step += tot_num_envs
             obs[step] = next_obs
             dones[step] = next_done
 
@@ -560,8 +574,8 @@ def train_env(proc_idx, args):
                 for k in infos["final_observation"]:
                     infos["final_observation"][k] = infos["final_observation"][k][done_mask]
                 with torch.no_grad():
-                    final_values[step, torch.arange(args.num_envs, device=device)[done_mask]] = agent.get_value(infos["final_observation"]).view(-1)
-        
+                    #to-do:final_values[step, torch.arange(tot_num_envs, device=device)[done_mask]] = agent.get_value(infos["final_observation"]).view(-1)
+                    final_values[step, torch.arange(tot_num_envs, device=device)[done_mask]] = agent.get_value(next_obs)[done_mask].view(-1)
         done_mask = ~train_dones
         sm = infos['smoothness']
         train_ssv[done_mask] = sm['sum_sqr_qv'][done_mask]
@@ -647,100 +661,133 @@ def train_env(proc_idx, args):
         # Optimizing the policy and value network
         agent.train()
         b_inds = np.arange(args.batch_size)
-        clipfracs = []
+        print("b inds:", max(b_inds), min(b_inds))
+        #clipfracs = []
         update_time = time.time()
-        for epoch in range(args.update_epochs):
+        #for epoch in range(args.update_epochs):
+        if False:
             np.random.shuffle(b_inds)
             for start in range(0, args.batch_size, args.minibatch_size):
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
-
+                
+                for ag_idx in range(args.num_agents-1):
+                    mb_inds = np.append(mb_inds, (ag_idx + 1)*args.batch_size + b_inds[start:end] )
+                
                 _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_obs[mb_inds], b_actions[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
-
-                with torch.no_grad():
-                    # calculate approx_kl http://joschu.net/blog/kl-approx.html
-                    old_approx_kl = (-logratio).mean()
-                    approx_kl = ((ratio - 1) - logratio).mean()
-                    clipfracs += [((ratio - 1.0).abs() > args.clip_coef).float().mean().item()]
-
-                if args.target_kl is not None and approx_kl > args.target_kl:
-                    break
-
-                mb_advantages = b_advantages[mb_inds]
-                if args.norm_adv:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
-
-                # Policy loss
-                pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
-                pg_loss = torch.max(pg_loss1, pg_loss2).mean()
-
-                # Value loss
                 newvalue = newvalue.view(-1)
-                if args.clip_vloss:
-                    v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
-                    v_clipped = b_values[mb_inds] + torch.clamp(
-                        newvalue - b_values[mb_inds],
-                        -args.clip_coef,
-                        args.clip_coef,
-                    )
-                    v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
-                    v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
-                    v_loss = 0.5 * v_loss_max.mean()
-                else:
-                    v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
+                for a_idx in range(args.num_agents):
+                    s = a_idx * args.minibatch_size #a_idx*args.batch_size + b_inds[start:end]
+                    f = (a_idx+1) * args.minibatch_size
+                    logratio_a = (logratio[:,s:f]).clone()
+                    ratio_a = (ratio[:,s:f]).clone()
+                    b_returns_a = (b_returns[s:f]).clone()
+                    newvalue_a = newvalue[s:f].clone()
+                    with torch.no_grad():
+                        # calculate approx_kl http://joschu.net/blog/kl-approx.html
+                        #print(logratio.get_device(), logratio.size())
+                        old_approx_kl = (-logratio_a).mean()
+                        #print(ratio_a.size(), logratio_a.size())
+                        approx_kl = ((ratio_a - 1) - logratio_a).mean()
+                        #todo clipfracs[a_idx] += [((ratio[s:f] - 1.0).abs() > args.clip_coef).float().mean().item()]
 
-                entropy_loss = entropy.mean()
-                loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
+                    if args.target_kl is not None and approx_kl > args.target_kl:
+                        break
 
-                optimizer.zero_grad()
-                loss.backward()
-                nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                optimizer.step()
+                    mb_advantages = (b_advantages[s:f]).clone()
+                    if args.norm_adv:
+                        mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+
+                    # Policy loss
+                    pg_loss1 = -mb_advantages * ratio_a
+                    pg_loss2 = -mb_advantages * torch.clamp(ratio_a, 1 - args.clip_coef, 1 + args.clip_coef)
+                    pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+
+                    # Value loss
+                    if args.clip_vloss:
+                        v_loss_unclipped = (newvalue_a - b_returns_a) ** 2
+                        v_clipped = b_values[s:f] + torch.clamp(
+                            newvalue_a - b_values[s:f],
+                            -args.clip_coef,
+                            args.clip_coef,
+                        )
+                        v_loss_clipped = (v_clipped - b_returns_a) ** 2
+                        v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
+                        v_loss = 0.5 * v_loss_max.mean()
+                    else:
+                        v_loss = 0.5 * ((newvalue_a - b_returns_a) ** 2).mean()
+
+                    entropy_loss = entropy[s:f].mean()
+                    loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
+
+                    if args.num_agents > 1:
+                        optimizers[a_idx].zero_grad()
+                        print(loss)
+                        print(loss.size())
+                        print((a_idx+1)==args.num_agents)
+                        loss.backward(retain_graph= not((a_idx+1)==args.num_agents) ).set_detect_anomaly(True)
+                        nn.utils.clip_grad_norm_(agent.agents[a_idx].parameters(), args.max_grad_norm)
+                        optimizers[a_idx].step()
+                    else:
+                        optimizer.zero_grad()
+                        loss.backward()
+                        nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+                        optimizer.step()
+
 
             if args.target_kl is not None and approx_kl > args.target_kl:
                 break
         update_time = time.time() - update_time
-        y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
-        var_y = np.var(y_true)
-        explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
+        #y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
+        #var_y = np.var(y_true)
+        #explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
-        logger.add_scalar(
-            {
-                "charts/learning_rate":optimizer.param_groups[0]["lr"],
-                "losses/value_loss":v_loss.item(),
-                "losses/policy_loss":pg_loss.item(),
-                "losses/entropy":entropy_loss.item(),
-                "losses/old_approx_kl":old_approx_kl.item(),
-                "losses/approx_kl":approx_kl.item(),
-                "losses/clipfrac":np.mean(clipfracs),
-                "losses/explained_variance":explained_var,
-                "charts/SPS":int(global_step / (time.time() - start_time)),
-                "time/step":global_step,
-                "time/update_time":update_time,
-                "time/rollout_time":rollout_time,
-                "time/rollout_fps":args.num_envs * args.num_steps / rollout_time
-            }, step=global_step)
+        if args.num_agents == 1:
+            logger.add_scalar(
+                {
+                    "charts/learning_rate":optimizer.param_groups[0]["lr"],
+                    "losses/value_loss":v_loss.item(),
+                    "losses/policy_loss":pg_loss.item(),
+                    "losses/entropy":entropy_loss.item(),
+                    "losses/old_approx_kl":old_approx_kl.item(),
+                    "losses/approx_kl":approx_kl.item(),
+                    #"losses/clipfrac":np.mean(clipfracs),
+                    "losses/explained_variance":explained_var,
+                    "charts/SPS":int(global_step / (time.time() - start_time)),
+                    "time/step":global_step,
+                    "time/update_time":update_time,
+                    "time/rollout_time":rollout_time,
+                    "time/rollout_fps":tot_num_envs * args.num_steps / rollout_time
+                }, step=global_step)
+        else:
+            logger.add_scalar(
+                {
+                    "charts/SPS":int(global_step / (time.time() - start_time)),
+                    "time/step":global_step,
+                    "time/update_time":update_time,
+                    "time/rollout_time":rollout_time,
+                    "time/rollout_fps":tot_num_envs * args.num_steps / rollout_time
+                }, step=global_step)
+
         print("SPS:", int(global_step / (time.time() - start_time)))
     
     if args.save_model and not args.evaluate:
         #model_path = f"runs/{run_name}/final_ckpt.pt"
-        model_path = f'{logger.get_dir()}/ckpts/final_ckpt.pt'
-        torch.save(agent.state_dict(), model_path)
-        logger.add_save("ckpts/final_ckpt.pt")
-        #print(f"model saved to {model_path}")
+        if args.num_agents > 1:
+            for a_idx in range(arg.num_agents):
+                model_path = f'{logger.get_dir()}/agent{a_idx}/ckpts/final_ckpt.pt'
+                torch.save(agent.agents[a_idx].state_dict(), model_path)
+                logger.add_save("agent{a_idx}/ckpts/final_ckpt.pt")
+                #print(f"model saved to {model_path}")
+        else:
+            model_path = f'{logger.get_dir()}/ckpts/final_ckpt.pt'
+            torch.save(agent.state_dict(), model_path)
+            logger.add_save("ckpts/final_ckpt.pt")
+            #print(f"model saved to {model_path}")
 
     envs.close()
     if logger is not None: 
         logger.finish()
 
-import torch.multiprocessing
-
-if __name__=="__main__":
-    args = tyro.cli(Args)
-    #torch.set_num_interop_threads(1)
-    #torch.set_num_threads(2)
-    torch.multiprocessing.spawn(train_env, [args], 3, True)
-    #train_env(0, args)
