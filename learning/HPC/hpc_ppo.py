@@ -1,8 +1,9 @@
 import sys
 
 # Add the folder path
-folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
-sys.path.append(folder_path)
+#folder_path = "/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark"
+#folder_path = "/home/hunter/Tactile_Benchmark"
+#sys.path.append(folder_path)
 
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppo_continuous_actionpy
 from collections import defaultdict
@@ -75,9 +76,11 @@ class Args:
     """Which robot to use """
     exp_max_dmg_force: float = 500.0
     """ Force to break the peg or the table """
+    use_bro_agent: bool = True
+    """ Use BroNet architecture for critic/agent or old one"""
 
     # Algorithm specific arguments
-    env_id: str = "PickCube-v1"
+    env_id: str = "FragilePegInsert-v1"
     """the id of the environment"""
     include_state: bool = True
     """whether to include state information in observations"""
@@ -91,9 +94,9 @@ class Args:
     """the number of parallel evaluation environments"""
     partial_reset: bool = True
     """whether to let parallel environments reset upon termination instead of truncation"""
-    num_steps: int = 50
+    num_steps: int = 150
     """the number of steps to run in each environment per policy rollout"""
-    num_eval_steps: int = 50
+    num_eval_steps: int = 150
     """the number of steps to run in each evaluation environment during evaluation"""
     reconfiguration_freq: Optional[int] = 1
     """for benchmarking purposes we want to reconfigure the eval environment each reset to ensure objects are randomized in some tasks"""
@@ -103,9 +106,9 @@ class Args:
     """the discount factor gamma"""
     gae_lambda: float = 0.9
     """the lambda for the general advantage estimation"""
-    num_minibatches: int = 32
+    num_minibatches: int = 150
     """the number of mini-batches"""
-    update_epochs: int = 4
+    update_epochs: int = 2
     """the K epochs to update the policy"""
     norm_adv: bool = True
     """Toggles advantages normalization"""
@@ -404,11 +407,19 @@ if __name__ == "__main__":
         'train_smoothness/avg_max_force': train_max_dmg_force,
     }
 
-    agent = Agent(
-        envs, 
-        sample_obs=next_obs, 
-        force_type=args.force_encoding
-    ).to(device)
+    if args.use_bro_agent:
+        agent = BroAgent(
+            envs, 
+            sample_obs=next_obs,
+            force_type=args.force_encoding,
+            device = device
+        ).to(device)
+    else:
+        agent = Agent(
+            envs, 
+            sample_obs=next_obs, 
+            force_type=args.force_encoding
+        ).to(device)
 
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 

@@ -7,7 +7,7 @@
 ##SBATCH -N 1                   # number of nodes (default 1)
 #SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
 #SBATCH --mem=16G               # request 10 gigabytes memory (per node, default depends on node)
-#SBATCH -c 4                    # number of cores/threads per task (default 1)
+#SBATCH -c 16                    # number of cores/threads per task (default 1)
 #SBATCH -o ../outs/batchTest_%A_%a.out		# name of output file for this submission script
 #SBATCH -e ../outs/batchTest_%A_%a.err		# name of error file for this submission script
 # load any software environment module required for app (e.g. matlab, gcc, cuda)
@@ -20,4 +20,12 @@ conda activate mani
 #echo starting_process
 #hol=nvidia-smi --query-gpu=memory.free --format=csv,noheader
 # run my job (e.g. matlab, python)
-bash learning/HPC/hpc_launch.bash $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_ID $*
+if [ $SLURM_ARRAY_TASK_ID==1 ]; then
+    beg_idx=1
+    end_idx=5
+else
+    beg_idx=6
+    end_idx=10
+fi
+#bash learning/HPC/hpc_launch.bash $beg_idx $end_idx $*
+bash learning/HPC/10_launch_tmux.bash $beg_idx $end_idx $*

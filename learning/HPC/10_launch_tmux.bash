@@ -1,10 +1,10 @@
 #!/bin/bash
 SESSION_NAME="Fragile_Baseline"
-NUM_WINDOWS=1
+#NUM_WINDOWS=5
 gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_launch.bash"
 tmux new-session -d -s "$SESSION_NAME"
 
-for i in $(seq 1 $NUM_WINDOWS); do
+for i in $(seq $1 $2); do
     tmux new-window -t "$SESSION_NAME":$i -n "Window $i"
     tmux send-keys -t "$SESSION_NAME":$i "conda activate mani && "
     tmux send-keys -t "$SESSION_NAME":$i "bash $gpu_path $i $i " 

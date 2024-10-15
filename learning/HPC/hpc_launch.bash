@@ -14,16 +14,14 @@ gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_
 #env_id="FragilePegInsert-v1"
 if [ "$4" = 'rgb' ] || [ "$4" = 'rgb_no_ft' ]; then
     num_envs=128
+    num_minibatches=75 # ensures minibatch size of 256
 else
     num_envs=256
+    num_minibatches=150 # ensures minibatch size of 256
 fi
 
-#num_envs=16
-#total_timesteps=5000
 eval_freq=10
-
-update_epochs=8
-num_minibatches=8
+update_epochs=2
 partial_reset=1
 reconfiguration_freq=1
 reward_scale=1.0
