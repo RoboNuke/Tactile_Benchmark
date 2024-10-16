@@ -145,7 +145,7 @@ class NatureCNN(nn.Module):
                 obs = obs.float().permute(0,3,1,2)
                 obs = obs / 255
             if key == 'force':
-                obs = obs.float() / 6000.0
+                obs = torch.tanh( obs.float() * 0.0011 )
             encoded_tensor_list.append(extractor(obs))
         return torch.cat(encoded_tensor_list, dim=1)
 
