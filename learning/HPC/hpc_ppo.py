@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from pytorch_optimizer import Shampoo
 import tyro
 from torch.distributions.normal import Normal
 
@@ -88,6 +89,8 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
+    weight_decay: float = 0.0
+    """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
     num_eval_envs: int = 8
@@ -421,8 +424,13 @@ if __name__ == "__main__":
             force_type=args.force_encoding
         ).to(device)
 
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
-
+    #optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
+    optimizer = Shampoo(
+            agent.parameters(), 
+            lr=args.learning_rate, 
+            eps=1e-5, 
+            weight_decay=args.weight_decay
+    )
     if args.checkpoint:
         agent.load_state_dict(torch.load(args.checkpoint))
 
