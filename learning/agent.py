@@ -148,46 +148,72 @@ class NatureCNN(nn.Module):
                 obs = obs.float() / 6000.0
             encoded_tensor_list.append(extractor(obs))
         return torch.cat(encoded_tensor_list, dim=1)
-    
+
+class CustomGLU(nn.Module):
+    def __init__(self, input_size):
+        super(CustomGLU, self).__init__()
+        self.linear_gate = nn.Linear(input_size, input_size)
+        self.linear_input = nn.Linear(input_size, input_size)
+
+    def forward(self, x):
+        #print(x.size())
+        #print(self.linear_gate, self.linear_input)
+        gate = torch.sigmoid(self.linear_gate(x))
+        return self.linear_input(x) * gate 
+
 class BroNetLayer(nn.Module):
-    def __init__(self, in_size, out_size):
+    def __init__(self, size, device):
         super().__init__()
 
         self.path = nn.Sequential(
-            layer_init(nn.Linear(out_size, out_size)),
-            nn.LayerNorm(out_size),
-            nn.GLU(),
-            layer_init(nn.Linear(out_size, out_size)),
-            nn.LayerNorm(out_size)
-        )
+            layer_init(nn.Linear(size, size)),
+            nn.LayerNorm(size),
+            #nn.GLU(),
+            CustomGLU(size),
+            layer_init(nn.Linear(size, size)),
+            nn.LayerNorm(size)
+        ).to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        #print("first x in forward:", x.size())
         res = x
+        #print("x in forward:", x.size())
+        #print("res in forward:", res.size())
+        #print("path\n", self.path)
         out = self.path(res)
         return out + res
 
 class BroNet(nn.Module):
-    def __init__(self, n, in_size, out_size, latent_size):
+    def __init__(self, n, in_size, out_size, latent_size, device):
         super().__init__()
         self.layers = []
         self.n = n
         self.input = nn.Sequential(
-            layer_init(nn.Linear(in_size, latent_size if n > 1 else out_size)),
-            nn.LayerNorm(latent_size if n > 1 else out_size),
-            nn.GLU(),
-        )
-        if n > 1:
-            self.layers.append(BroNetLayer(in_size, latent_size))
-            for i in range(n-2):
-                self.layers.append(BroNetLayer(latent_size, latent_size))
-            self.layers.append(BroNetLayer(latent_size, out_size))
-        else:
-            self.layers.append(BroNetLayer(in_size, out_size))
+            layer_init(nn.Linear(in_size, latent_size)),
+            nn.LayerNorm(latent_size),
+            #nn.GLU(),
+            CustomGLU(latent_size)
+        ).to(device)
+
+        self.layers = nn.ModuleList([BroNetLayer(latent_size, device) for i in range(self.n)])
+
+        self.output = nn.Sequential(
+                            layer_init(nn.Linear(latent_size, out_size)),
+                            nn.LayerNorm(out_size),
+                            #nn.GLU(),
+                            CustomGLU(out_size)
+        ).to(device)
 
     def forward(self, x):
+        #print("input forward:", self.input)
         out =  self.input(x)
+        #print("net forward out:", out.size())
         for i in range(self.n):
             out = self.layers[i](out)
+            #print(f"{i} forward:", out.size())
+        #print("about to out")
+        out = self.output(out)
+        #print(out.size())
         return out
 
 
@@ -216,7 +242,9 @@ class Agent(nn.Module):
         x = self.feature_net(x)
         return self.critic(x)
     def get_action(self, x, deterministic=False):
+        #print("in x:", [x[k].size() for k in x])
         x = self.feature_net(x)
+        #print(x.size())
         action_mean = self.actor_mean(x)
         if deterministic:
             return action_mean
@@ -251,17 +279,22 @@ class BroAgent(Agent):
         super().__init__(envs, sample_obs, force_type, True)
         self.feature_net = NatureCNN(sample_obs=sample_obs, force_type=force_type)#, act_func=nn.ReLU)
         self.feature_net.to(device)
+        #print("feat net\n", self.feature_net)
         in_size = self.feature_net.out_features
         out_size = np.prod(envs.unwrapped.single_action_space.shape)
-        self.critic = BroNet(critic_n, in_size, 1, critic_latent)
-        self.critic.to(device)
-        self.actors = [BroNet(actor_n, in_size, out_size, actor_latent) for i in range(tot_actors)]
-        # layers[-1] get last BroNet residual block
+        #print("in size:", in_size)
+        #print("out size:", out_size)
+        #print("latent size:", actor_latent, critic_latent)
+        self.critic = BroNet(critic_n, in_size, 1, critic_latent, device)
+        #print("critic\n", self.critic)
+        self.actors = [BroNet(actor_n, in_size, out_size, actor_latent, device) for i in range(tot_actors)]
+        #print("actor\n", self.actors[0])
+        # layers[-1] get last BroNet residual block 
         # .path[-2] get 2nd last layer (skipping layer norm)
         for actor in self.actors:
             layer_init(actor.layers[-1].path[-2], std=0.01*np.sqrt(2)) 
             actor.to(device)
-        self.actor_logstds = [nn.Parameter(torch.ones(1, out_size) * -0.5) for i in range(tot_actors)]
+        self.actor_logstds = [nn.Parameter(torch.ones(1, out_size) * -0.5).to(device) for i in range(tot_actors)]
         for logstd in self.actor_logstds:
             logstd.to(device)
         if tot_actors == 1:

@@ -106,7 +106,7 @@ class Args:
     """the discount factor gamma"""
     gae_lambda: float = 0.9
     """the lambda for the general advantage estimation"""
-    num_minibatches: int = 150
+    num_minibatches: int = 32
     """the number of mini-batches"""
     update_epochs: int = 2
     """the K epochs to update the policy"""
