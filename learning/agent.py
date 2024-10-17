@@ -169,7 +169,8 @@ class BroNetLayer(nn.Module):
             layer_init(nn.Linear(size, size)),
             nn.LayerNorm(size),
             #nn.GLU(),
-            CustomGLU(size),
+            #CustomGLU(size),
+            nn.ReLU(),
             layer_init(nn.Linear(size, size)),
             nn.LayerNorm(size)
         ).to(device)
@@ -192,7 +193,8 @@ class BroNet(nn.Module):
             layer_init(nn.Linear(in_size, latent_size)),
             nn.LayerNorm(latent_size),
             #nn.GLU(),
-            CustomGLU(latent_size)
+            #CustomGLU(size),
+            nn.ReLU(),
         ).to(device)
 
         self.layers = nn.ModuleList([BroNetLayer(latent_size, device) for i in range(self.n)])
@@ -201,7 +203,8 @@ class BroNet(nn.Module):
                             layer_init(nn.Linear(latent_size, out_size)),
                             nn.LayerNorm(out_size),
                             #nn.GLU(),
-                            CustomGLU(out_size)
+                            #CustomGLU(size),
+                            nn.ReLU(),
         ).to(device)
 
     def forward(self, x):
