@@ -271,10 +271,10 @@ class BroAgent(Agent):
             envs, 
             sample_obs, 
             force_type='FNN', 
-            critic_n = 2, 
+            critic_n = 1, 
             actor_n = 2,
-            critic_latent=512,
-            actor_latent=256,
+            critic_latent=128,
+            actor_latent=512,
             tot_actors=1,
             device='cpu'
         ):

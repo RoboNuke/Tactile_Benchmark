@@ -38,6 +38,8 @@ total_timesteps=$8
 control_mode=$9
 reward_mode=${10}
 force_encoding=${11}
+critic_n=${12}
+critic_l=${13}
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
@@ -113,7 +115,9 @@ do
         --$include_state \
         --seed=$i \
         --exp-name=$exp_name \
-        --exp-max-dmg-force=$dmg_force
+        --exp-max-dmg-force=$dmg_force \
+	--critic_n=$critic_n \
+	--critic_hidden_layer_size=$critic_l
 done
 
 

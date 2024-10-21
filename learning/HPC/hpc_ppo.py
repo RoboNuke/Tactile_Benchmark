@@ -79,6 +79,10 @@ class Args:
     """ Force to break the peg or the table """
     use_bro_agent: bool = True
     """ Use BroNet architecture for critic/agent or old one"""
+    critic_n: int = 2
+    """ How many layers of bronet for the bro agent """
+    critic_hidden_layer_size: int = 512
+    """ How many hidden units in each layer of the bro agent critic BroNet """
 
     # Algorithm specific arguments
     env_id: str = "FragilePegInsert-v1"
@@ -265,7 +269,8 @@ if __name__ == "__main__":
             args.obs_mode, 
             "force" if args.include_force else "without_force",
             args.control_mode, # action space 
-            str(args.exp_max_dmg_force)
+            str(args.exp_max_dmg_force),
+            'removed_clip'
         ]
 
         logger = DataManager(
@@ -415,7 +420,9 @@ if __name__ == "__main__":
             envs, 
             sample_obs=next_obs,
             force_type=args.force_encoding,
-            device = device
+            device = device,
+            critic_n = args.critic_n,
+            critic_latent = args.critic_hidden_layer_size
         ).to(device)
     else:
         agent = Agent(
@@ -424,13 +431,13 @@ if __name__ == "__main__":
             force_type=args.force_encoding
         ).to(device)
 
-    #optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
-    optimizer = Shampoo(
+    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
+    """optimizer = Shampoo(
             agent.parameters(), 
             lr=args.learning_rate, 
             eps=1e-5, 
             weight_decay=args.weight_decay
-    )
+    )"""
     if args.checkpoint:
         agent.load_state_dict(torch.load(args.checkpoint))
 
@@ -712,7 +719,7 @@ if __name__ == "__main__":
 
                 optimizer.zero_grad()
                 loss.backward()
-                nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+                #nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
                 optimizer.step()
 
             if args.target_kl is not None and approx_kl > args.target_kl:
