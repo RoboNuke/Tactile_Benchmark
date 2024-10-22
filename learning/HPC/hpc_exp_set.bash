@@ -32,8 +32,8 @@ for control_mode in ${control_modes[@]}; do
                             $control_mode \
                             $reward_mode \
                             $force_encoding \
-                            2 \  
-                            512 
+                            "2" \
+                            "512" 
                             # ${critic_l[0]} 
 		            #done	
                 done
