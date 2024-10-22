@@ -46,6 +46,14 @@ class PandaForce(Panda):
             gripper = base_controller_configs['pd_joint_delta_pos']['gripper'] 
         )
         return deepcopy_dict(base_controller_configs)
+    
+    def get_ee_force(self, norm=False):
+        l_force = self.finger1_link.get_net_contact_forces()
+        r_force = self.finger2_link.get_net_contact_forces()
+        if norm:
+            return torch.linalg.norm(l_force + r_force, axis=1)
+        return l_force + r_force
+        
 
 class TorqueJointController(BaseController):
     config: "TorqueJointControllerConfig"
