@@ -434,7 +434,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(
         agent.parameters(), 
         lr=args.learning_rate, 
-        eps=1e-5
+        eps=1e-5,
         weight_decay=args.weight_decay
     )
     """optimizer = Shampoo(

@@ -8,8 +8,8 @@
 #SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
 #SBATCH --mem=16G               # request 10 gigabytes memory (per node, default depends on node)
 #SBATCH -c 2                    # number of cores/threads per task (default 1)
-#SBATCH -o ../outs/Critic_BroNet_%a_%A.out		# name of output file for this submission script
-#SBATCH -e ../outs/Critic_BroNet_%a_%A.err		# name of error file for this submission script
+#SBATCH -o ../outs/Settings_BroNet_%A_%a.out		# name of output file for this submission script
+#SBATCH -e ../outs/Settings_BroNet_%A_%a.err		# name of error file for this submission script
 # load any software environment module required for app (e.g. matlab, gcc, cuda)
 
 
@@ -28,5 +28,5 @@ else
     end_idx=10
 fi
 echo $beg_idx $end_idx $SLURM_ARRAY_TASK_ID
-#bash learning/HPC/hpc_launch.bash 1 1 $*
-bash learning/HPC/10_launch_tmux.bash $beg_idx $end_idx $*
+bash learning/HPC/hpc_launch.bash $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_ID $*
+#bash learning/HPC/10_launch_tmux.bash $beg_idx $end_idx $*
