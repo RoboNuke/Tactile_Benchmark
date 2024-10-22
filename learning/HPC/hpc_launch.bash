@@ -87,6 +87,12 @@ else
     include_state='no-include-state'
 fi
 
+if [ $use_shampoo -eq 1 ]; then
+    use_shampoo='use-shampoo'
+else
+    use_shampoo='no-use-shampoo'
+fi
+
 for i in $(seq $start $end);
 do
     #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
@@ -119,7 +125,7 @@ do
         --exp-max-dmg-force=$dmg_force \
         --critic_n=$critic_n \
         --critic_hidden_layer_size=$critic_l \
-        --use_shampoo=$use_shampoo
+        --$use_shampoo
 done
 
 
