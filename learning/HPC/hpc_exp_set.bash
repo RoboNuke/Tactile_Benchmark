@@ -7,8 +7,10 @@ dmg_vals=("500.0" "100000.0") # "100.0" "50.0" "250.0" "100000.0")
 control_modes=("pd_joint_delta_pos")
 reward_modes=("normalized_dense")
 force_encodings=("FFN")
-critic_n=("1" "1" "1" "2" "3")
-critic_l=("128" "256" "512" "512" "1024")
+#critic_n=("1" "1" "1" "2" "3")
+#critic_l=("128" "256" "512" "512" "1024")
+critic_n=("2")
+critic_l=("512")
 
 tmux new-session -d -s "Holder"
 for control_mode in ${control_modes[@]}; do
@@ -16,10 +18,10 @@ for control_mode in ${control_modes[@]}; do
         for force_encoding in ${force_encodings[@]}; do
             for obs_type in ${obs_types[@]}; do
                 for dmg_val in ${dmg_vals[@]}; do
-		    echo ${dmg_val} ${obs_type}
-		    for (( i=0; i<5; i++ )); do	
-                        echo "    " ${critic_n[$i]} ${critic_l[$i]}
-		        exp_name="critic_${critic_n[$i]}_${critic_l[$i]}_${dmg_val}_${obs_type}"
+		            echo ${dmg_val} ${obs_type}
+		            #for (( i=0; i<5; i++ )); do	
+                    #echo "    " ${critic_n[$i]} ${critic_l[$i]}
+		                exp_name="setting_${dmg_val}_${obs_type}"
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
                             $obs_type \
@@ -30,9 +32,10 @@ for control_mode in ${control_modes[@]}; do
                             $control_mode \
                             $reward_mode \
                             $force_encoding \
-			    ${critic_n[$i]} \
-			    ${critic_l[$i]} 
-		    done	
+                            2 \  
+                            512 
+                            # ${critic_l[0]} 
+		            #done	
                 done
             done
         done

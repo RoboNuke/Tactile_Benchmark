@@ -17,7 +17,7 @@ if [ "$4" = 'rgb' ] || [ "$4" = 'rgb_no_ft' ]; then
     num_minibatches=75 # ensures minibatch size of 256
 else
     num_envs=256
-    num_minibatches=32 #150 # ensures minibatch size of 256
+    num_minibatches=150 # ensures minibatch size of 256
 fi
 
 eval_freq=10

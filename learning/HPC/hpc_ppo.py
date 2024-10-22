@@ -93,7 +93,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.0
+    weight_decay: float = 0.0001
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
@@ -109,9 +109,9 @@ class Args:
     """for benchmarking purposes we want to reconfigure the eval environment each reset to ensure objects are randomized in some tasks"""
     anneal_lr: bool = False
     """Toggle learning rate annealing for policy and value networks"""
-    gamma: float = 0.8
+    gamma: float = 0.99 #0.8
     """the discount factor gamma"""
-    gae_lambda: float = 0.9
+    gae_lambda: float = 0.99 #0.9
     """the lambda for the general advantage estimation"""
     num_minibatches: int = 32
     """the number of mini-batches"""
@@ -129,7 +129,7 @@ class Args:
     """coefficient of the value function"""
     max_grad_norm: float = 0.5
     """the maximum norm for the gradient clipping"""
-    target_kl: float = 0.2
+    target_kl: float = 0.05 #0.2
     """the target KL divergence threshold"""
     reward_scale: float = 1.0
     """Scale the reward by this factor"""
@@ -431,7 +431,12 @@ if __name__ == "__main__":
             force_type=args.force_encoding
         ).to(device)
 
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
+    optimizer = optim.Adam(
+        agent.parameters(), 
+        lr=args.learning_rate, 
+        eps=1e-5
+        weight_decay=args.weight_decay
+    )
     """optimizer = Shampoo(
             agent.parameters(), 
             lr=args.learning_rate, 
