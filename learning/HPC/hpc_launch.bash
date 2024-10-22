@@ -40,6 +40,7 @@ reward_mode=${10}
 force_encoding=${11}
 critic_n=${12}
 critic_l=${13}
+use_shampoo=${14}
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
@@ -90,7 +91,7 @@ for i in $(seq $start $end);
 do
     #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
     #exp_name = "pickcube_state_baseline_" + $i
-    exp_name="${exp_set_name}_${i}_${date}"
+    exp_name="${exp_set_name}_${i}" #_${date}"
     python $gpu_path \
         --wandb-project-name=$wandb_project_name \
         --wandb-entity=$wandb_entity \
@@ -116,8 +117,9 @@ do
         --seed=$i \
         --exp-name=$exp_name \
         --exp-max-dmg-force=$dmg_force \
-	--critic_n=$critic_n \
-	--critic_hidden_layer_size=$critic_l
+        --critic_n=$critic_n \
+        --critic_hidden_layer_size=$critic_l \
+        --use_shampoo=$use_shampoo
 done
 
 

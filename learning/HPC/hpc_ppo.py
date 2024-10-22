@@ -83,6 +83,8 @@ class Args:
     """ How many layers of bronet for the bro agent """
     critic_hidden_layer_size: int = 512
     """ How many hidden units in each layer of the bro agent critic BroNet """
+    use_shampoo: bool = False
+    """ Use shampoo optimizer instead of ADAM"""
 
     # Algorithm specific arguments
     env_id: str = "FragilePegInsert-v1"
@@ -93,7 +95,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.01
+    weight_decay: float = 0.0001
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
@@ -431,18 +433,20 @@ if __name__ == "__main__":
             force_type=args.force_encoding
         ).to(device)
 
-    optimizer = optim.Adam(
-        agent.parameters(), 
-        lr=args.learning_rate, 
-        eps=1e-5,
-        weight_decay=args.weight_decay
-    )
-    """optimizer = Shampoo(
+    if not args.use_shampoo:
+        optimizer = optim.Adam(
             agent.parameters(), 
             lr=args.learning_rate, 
-            eps=1e-5, 
+            eps=1e-5,
             weight_decay=args.weight_decay
-    )"""
+        )
+    else:
+        optimizer = Shampoo(
+                agent.parameters(), 
+                lr=args.learning_rate, 
+                eps=1e-5, 
+                weight_decay=args.weight_decay
+        )
     if args.checkpoint:
         agent.load_state_dict(torch.load(args.checkpoint))
 

@@ -176,11 +176,7 @@ class BroNetLayer(nn.Module):
         ).to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        #print("first x in forward:", x.size())
         res = x
-        #print("x in forward:", x.size())
-        #print("res in forward:", res.size())
-        #print("path\n", self.path)
         out = self.path(res)
         return out + res
 
@@ -201,10 +197,7 @@ class BroNet(nn.Module):
 
         self.output = nn.Sequential(
                             layer_init(nn.Linear(latent_size, out_size)),
-                            nn.LayerNorm(out_size),
-                            #nn.GLU(),
-                            #CustomGLU(size),
-                            nn.ReLU(),
+                            nn.Tanh()
         ).to(device)
 
     def forward(self, x):
@@ -285,15 +278,11 @@ class BroAgent(Agent):
         #print("feat net\n", self.feature_net)
         in_size = self.feature_net.out_features
         out_size = np.prod(envs.unwrapped.single_action_space.shape)
-        #print("in size:", in_size)
-        #print("out size:", out_size)
-        #print("latent size:", actor_latent, critic_latent)
+        
         self.critic = BroNet(critic_n, in_size, 1, critic_latent, device)
-        #print("critic\n", self.critic)
+        
         self.actors = [BroNet(actor_n, in_size, out_size, actor_latent, device) for i in range(tot_actors)]
-        #print("actor\n", self.actors[0])
-        # layers[-1] get last BroNet residual block 
-        # .path[-2] get 2nd last layer (skipping layer norm)
+        
         for actor in self.actors:
             layer_init(actor.layers[-1].path[-2], std=0.01*np.sqrt(2)) 
             actor.to(device)
