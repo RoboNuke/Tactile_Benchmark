@@ -77,7 +77,7 @@ class Args:
     """Which robot to use """
     exp_max_dmg_force: float = 500.0
     """ Force to break the peg or the table """
-    use_bro_agent: bool = False
+    use_bro_agent: bool = True
     """ Use BroNet architecture for critic/agent or old one"""
     critic_n: int = 2
     """ How many layers of bronet for the bro agent """
@@ -95,7 +95,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.0001
+    weight_decay: float = 0.01
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
@@ -117,7 +117,7 @@ class Args:
     """the lambda for the general advantage estimation"""
     num_minibatches: int = 32
     """the number of mini-batches"""
-    update_epochs: int = 2
+    update_epochs: int = 10
     """the K epochs to update the policy"""
     norm_adv: bool = True
     """Toggles advantages normalization"""
