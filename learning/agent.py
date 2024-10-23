@@ -276,12 +276,12 @@ class BroAgent(Agent):
         in_size = self.feature_net.out_features
         out_size = np.prod(envs.unwrapped.single_action_space.shape)
         
-        self.critic = nn.Sequential(
-                            BroNet(critic_n, in_size, 1, critic_latent, device),
-                            nn.Tanh()
-        ).to(device)
+        self.critic = BroNet(critic_n, in_size, 1, critic_latent, device).to(device)
         
-        self.actors = [BroNet(actor_n, in_size, out_size, actor_latent, device) for i in range(tot_actors)]
+        self.actors = [nn.Sequential(
+                            BroNet(actor_n, in_size, out_size, actor_latent, device),
+                            nn.Tanh()
+                        ).to(device) for i in range(tot_actors)]
         
         for actor in self.actors:
             layer_init(actor.layers[-1].path[-2], std=0.01*np.sqrt(2)) 
