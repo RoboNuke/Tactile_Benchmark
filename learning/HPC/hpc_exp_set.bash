@@ -22,7 +22,7 @@ for control_mode in ${control_modes[@]}; do
 		            echo ${dmg_val} ${obs_type}
 		            #for (( i=0; i<5; i++ )); do	
                     #echo "    " ${critic_n[$i]} ${critic_l[$i]}
-		                exp_name="InitBetter_${dmg_val}_${obs_type}"
+		                exp_name="InitBetter2_${dmg_val}_${obs_type}"
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
                             $obs_type \
