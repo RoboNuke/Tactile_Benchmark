@@ -287,7 +287,7 @@ class BroAgent(Agent):
         self.actors = [BroNet(actor_n, in_size, out_size, actor_latent, device, tanh_out=True) for i in range(tot_actors)]
         
         for actor in self.actors:
-            layer_init(actor.layers[-1].path[-2], std=0.01*np.sqrt(2)) 
+            layer_init(actor.output[-2], std=0.01*np.sqrt(2)) 
             actor.to(device)
         self.actor_logstds = [nn.Parameter(torch.ones(1, out_size) * -0.5).to(device) for i in range(tot_actors)]
         for logstd in self.actor_logstds:
