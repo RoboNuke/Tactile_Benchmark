@@ -434,7 +434,7 @@ if __name__ == "__main__":
         ).to(device)
 
     if not args.use_shampoo:
-        optimizer = optim.Adam(
+        optimizer = optim.AdamW(
             agent.parameters(), 
             lr=args.learning_rate, 
             eps=1e-5,

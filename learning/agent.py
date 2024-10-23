@@ -195,10 +195,7 @@ class BroNet(nn.Module):
 
         self.layers = nn.ModuleList([BroNetLayer(latent_size, device) for i in range(self.n)])
 
-        self.output = nn.Sequential(
-                            layer_init(nn.Linear(latent_size, out_size)),
-                            nn.Tanh()
-        ).to(device)
+        self.output = layer_init(nn.Linear(latent_size, out_size)).to(device)
 
     def forward(self, x):
         #print("input forward:", self.input)
@@ -279,7 +276,10 @@ class BroAgent(Agent):
         in_size = self.feature_net.out_features
         out_size = np.prod(envs.unwrapped.single_action_space.shape)
         
-        self.critic = BroNet(critic_n, in_size, 1, critic_latent, device)
+        self.critic = nn.Sequential(
+                            BroNet(critic_n, in_size, 1, critic_latent, device),
+                            nn.Tanh()
+        ).to(device)
         
         self.actors = [BroNet(actor_n, in_size, out_size, actor_latent, device) for i in range(tot_actors)]
         

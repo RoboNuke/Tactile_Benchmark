@@ -11,7 +11,7 @@ force_encodings=("FFN")
 #critic_l=("128" "256" "512" "512" "1024")
 critic_n=("2")
 critic_l=("512")
-use_shampoo=1
+use_shampoo=0
 
 tmux new-session -d -s "Holder"
 for control_mode in ${control_modes[@]}; do
@@ -22,7 +22,7 @@ for control_mode in ${control_modes[@]}; do
 		            echo ${dmg_val} ${obs_type}
 		            #for (( i=0; i<5; i++ )); do	
                     #echo "    " ${critic_n[$i]} ${critic_l[$i]}
-		                exp_name="OldShampoo_${dmg_val}_${obs_type}"
+		                exp_name="TanHFix_${dmg_val}_${obs_type}"
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
                             $obs_type \
