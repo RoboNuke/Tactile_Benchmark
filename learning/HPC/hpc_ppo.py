@@ -77,7 +77,7 @@ class Args:
     """Which robot to use """
     exp_max_dmg_force: float = 500.0
     """ Force to break the peg or the table """
-    use_bro_agent: bool = True
+    use_bro_agent: bool = False
     """ Use BroNet architecture for critic/agent or old one"""
     critic_n: int = 2
     """ How many layers of bronet for the bro agent """
