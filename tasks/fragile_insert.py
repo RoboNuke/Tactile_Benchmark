@@ -14,7 +14,13 @@ class FragilePegInsert(PegInsertionSideEnv):
     maximum_peg_force = 500.0
     SUPPORTED_ROBOTS = ["panda", "fetch", "panda_force"]
     
-    def __init__(self, *args, obs_mode='state', dmg_force=500.0, **kwargs):
+    def __init__(self, 
+            *args, 
+            obs_mode='state', 
+            dmg_force=500.0, 
+            clearance=0.008,
+            **kwargs
+        ):
         # handle the ft stuff
         self.maximum_peg_force = dmg_force
         self.return_force_data = True
@@ -23,6 +29,7 @@ class FragilePegInsert(PegInsertionSideEnv):
             obs_mode=obs_mode[:-6]
 
         super().__init__(*args, obs_mode=obs_mode, **kwargs)
+        self._clearance = clearance
 
     def _load_scene(self, options: dict):
         super()._load_scene(options)

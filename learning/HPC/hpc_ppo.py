@@ -111,9 +111,9 @@ class Args:
     """for benchmarking purposes we want to reconfigure the eval environment each reset to ensure objects are randomized in some tasks"""
     anneal_lr: bool = False
     """Toggle learning rate annealing for policy and value networks"""
-    gamma: float = 0.8 #0.99 #0.8
+    gamma: float = 0.99 #0.8
     """the discount factor gamma"""
-    gae_lambda: float = 0.9 #0.99 #0.9
+    gae_lambda: float = 0.99 #0.9
     """the lambda for the general advantage estimation"""
     num_minibatches: int = 32
     """the number of mini-batches"""
@@ -131,7 +131,7 @@ class Args:
     """coefficient of the value function"""
     max_grad_norm: float = 0.5
     """the maximum norm for the gradient clipping"""
-    target_kl: float = 0.2 #0.05 #0.2
+    target_kl: float = 0.05 #0.2
     """the target KL divergence threshold"""
     reward_scale: float = 1.0
     """Scale the reward by this factor"""
