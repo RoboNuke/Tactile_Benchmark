@@ -22,7 +22,7 @@ for control_mode in ${control_modes[@]}; do
 		            echo ${dmg_val} ${obs_type}
 		            #for (( i=0; i<4; i++ )); do	
                     #echo "    " ${critic_n[$i]} ${critic_l[$i]}
-		                exp_name="OldParamsBro_"
+		                exp_name="WD01"
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
                             $obs_type \
