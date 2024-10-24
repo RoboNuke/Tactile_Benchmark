@@ -95,7 +95,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.1
+    weight_decay: float = 0.01
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
@@ -111,9 +111,9 @@ class Args:
     """for benchmarking purposes we want to reconfigure the eval environment each reset to ensure objects are randomized in some tasks"""
     anneal_lr: bool = False
     """Toggle learning rate annealing for policy and value networks"""
-    gamma: float = 0.99 #0.8
+    gamma: float = 0.90 #0.8
     """the discount factor gamma"""
-    gae_lambda: float = 0.99 #0.9
+    gae_lambda: float = 0.95 #0.9
     """the lambda for the general advantage estimation"""
     num_minibatches: int = 32
     """the number of mini-batches"""
