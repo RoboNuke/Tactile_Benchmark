@@ -111,7 +111,22 @@ class NatureCNN(nn.Module):
             extractors["rgb"] = nn.Sequential(cnn, fc)
             self.out_features += feature_size
 
-        if "state" in sample_obs:
+        self.cat_state_force = False
+        if 'state' in sample_obs and 'force' in sample_obs:
+            self.cat_state_force = True
+            state_size = sample_obs["state"].shape[-1]
+            if force_type == "FFN":
+                force_size = sample_obs['force'].shape[-1]
+            else:
+                raise NotImplementedError(f"Unexpected force type:{force_type}")
+            
+            extractors['state'] = nn.Sequential(
+                nn.Linear(state_size + force_size, 256),
+                nn.ReLU()
+            )
+            self.out_features += 256
+
+        if "state" in sample_obs and "force" not in sample_obs:
             # for state data we simply pass it through a single linear layer
             state_size = sample_obs["state"].shape[-1]
             extractors["state"] = nn.Sequential(
@@ -120,7 +135,7 @@ class NatureCNN(nn.Module):
             )
             self.out_features += 256
 
-        if "force" in sample_obs:
+        elif "force" in sample_obs and "state" not in sample_obs:
             if force_type == "FFN":
                 force_size = sample_obs['force'].shape[-1]
                 extractors["force"] = nn.Sequential(
@@ -141,12 +156,18 @@ class NatureCNN(nn.Module):
         # self.extractors contain nn.Modules that do all the processing.
         for key, extractor in self.extractors.items():
             obs = observations[key]
-            if key == "rgb":
-                obs = obs.float().permute(0,3,1,2)
-                obs = obs / 255
-            if key == 'force':
-                obs = torch.tanh( obs.float() * 0.0011 )
-            encoded_tensor_list.append(extractor(obs))
+            if self.cat_state_force and (key == 'state'):
+                f_obs = torch.tanh( observations['force'] * 0.0011)
+                s_obs = observations['state']
+                obs = torch.cat([s_obs, f_obs], dim=1) 
+                encoded_tensor_list.append(extractor(obs))
+            elif not self.cat_state_force:
+                if key == "rgb":
+                    obs = obs.float().permute(0,3,1,2)
+                    obs = obs / 255
+                if key == 'force':
+                    obs = torch.tanh( obs.float() * 0.0011 )
+                encoded_tensor_list.append(extractor(obs))
         return torch.cat(encoded_tensor_list, dim=1)
 
 class CustomGLU(nn.Module):

@@ -47,6 +47,23 @@ class TestAgent(unittest.TestCase):
                             reward_mode=reward_mode,
                             obs_mode=obs_mode)
         self.envs.reset()
+
+    def test_force_stat_comb(self):
+        batch_size = 16
+        test_obs = {'state': torch.ones((batch_size,27)),
+                    'force': torch.ones((batch_size,3))
+        }
+        NCNN = NatureCNN(test_obs)
+        ext_in_size = NCNN.extractors['state'][0].in_features
+        ext_out_size = NCNN.extractors['state'][0].out_features
+        assert ext_in_size == 30, f'Extraction layer input size not 30: {ext_in_size}'
+        assert ext_out_size == 256, f'Extraction out layer size not 256: {ext_out_size}'
+
+        encoded = NCNN.forward(test_obs)
+        bn, fn = encoded.size()
+        assert bn==batch_size, f'Batch size is {bn} but should be {batch_size}'
+        assert fn==256, f'Feature output size is {fn} but should be 256'
+
     """
     def test_rgb_extractor(self):
         self.get_env(obs_mode='rgb')
