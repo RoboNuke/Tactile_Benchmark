@@ -93,7 +93,7 @@ class Args:
     """whether to include state information in observations"""
     total_timesteps: int = 10000
     """total timesteps of the experiments"""
-    learning_rate: float = 3e-4
+    learning_rate: float = 1e-4
     """the learning rate of the optimizer"""
     weight_decay: float = 0.01
     """the weight decay precent for optimizer"""
@@ -131,7 +131,7 @@ class Args:
     """coefficient of the value function"""
     max_grad_norm: float = 0.5
     """the maximum norm for the gradient clipping"""
-    target_kl: float = 0.2
+    target_kl: float = 0.05 #0.2
     """the target KL divergence threshold"""
     reward_scale: float = 1.0
     """Scale the reward by this factor"""
