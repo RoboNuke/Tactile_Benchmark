@@ -104,7 +104,6 @@ class TestTorqueController(unittest.TestCase):
     def get_qfs(self, con):
         return con.articulation.get_qf()
     
-
     def test_partial_reset(self):
         self.get_env()
         con = self.envs.unwrapped.agent.controller.controllers['arm']

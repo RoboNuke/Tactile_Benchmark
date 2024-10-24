@@ -109,6 +109,7 @@ class FragilePegInsert(PegInsertionSideEnv):
     def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
         #print("Computing dense reward")
         r = super().compute_dense_reward(obs, action, info)
+        #r[info['success']] *= 10
         #r *= torch.logical_not(info['fail']) # zero out all failed cases
         #r -= 10 * info['fail'] # make them all -10!
         #print("dense reward:", r[0])

@@ -100,28 +100,38 @@ class TestHybridController(unittest.TestCase):
     def test_action_space_ee_force_init(self):
         # action space when ee force only controller
         self.get_env(control_mode="ee_force")
-        controller = self.envs.unwrapped.agent.controller
-        assert type(controller.action_space) == gym.spaces.box.Box, f'Space is of type {type(controller.action_space)}, should by gymnasium.spaces.Space'
-        as_shape = controller.action_space.shape
+        #self.con = self.envs.unwrapped.agent.self.con
+        assert type(self.con.action_space) == gym.spaces.box.Box, f'Space is of type {type(self.con.action_space)}, should by gymnasium.spaces.Space'
+        as_shape = self.con.action_space.shape
         assert as_shape[0] == 2, f'Action space dim should is {as_shape}, should be [2,6]'
         assert as_shape[1] == 6, f'Action space dim should is {as_shape}, should be [2,6]'
-        dt = controller.action_space.dtype
+        dt = self.con.action_space.dtype
         assert dt==np.float32, f'Dtype is {dt} but should be np.float32'
 
     def test_action_space_init(self):
         # checks action space is correct size
         self.get_env()
-        controller = self.envs.unwrapped.agent.controller
-        assert type(controller.action_space) == gym.spaces.box.Box, f'Space is of type {type(controller.action_space)}, should by gymnasium.spaces.Space'
-        as_shape = controller.action_space.shape
+        #self.con = self.envs.unwrapped.agent.self.con
+        assert type(self.con.action_space) == gym.spaces.box.Box, f'Space is of type {type(self.con.action_space)}, should by gymnasium.spaces.Space'
+        as_shape = self.con.action_space.shape
         assert as_shape[0] == 2, f'Action space dim should is {as_shape}, should be [2,6]'
         assert as_shape[1] == 6, f'Action space dim should is {as_shape}, should be [2,6]'
-        dt = controller.action_space.dtype
+        dt = self.con.action_space.dtype
         assert dt==np.float32, f'Dtype is {dt} but should be np.float32'
 
     def test_set_action_ee_force(self):
         # set ee force control creates correct target
-        assert 1==0
+        self.get_env(control_mode="ee_force")
+
+        init_action = (torch.ones((2,6)) * 4.0  )/100.0
+        final_action = init_action[:,:-1]*100.0#[] # action after preprocessing
+        
+        self.envs.step(init_action)
+        con = self.envs.unwrapped.agent.controller.controllers['arm']
+        #for i, joint in enumerate(controller.joints):
+        # for each joint check
+        qf = con.qf.cpu()
+        assert torch.all(qf == final_action), f"qf not set properly {qf} should be {final_action}"
 
     def test_set_action(self):
         # set hybrid control and ensure correct target
