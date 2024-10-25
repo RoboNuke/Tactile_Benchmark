@@ -93,7 +93,7 @@ class Args:
     """whether to include state information in observations"""
     total_timesteps: int = 10000
     """total timesteps of the experiments"""
-    learning_rate: float = 1e-4
+    learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
     weight_decay: float = 0.01
     """the weight decay precent for optimizer"""
