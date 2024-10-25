@@ -79,9 +79,9 @@ class Args:
     """ Force to break the peg or the table """
     use_bro_agent: bool = True
     """ Use BroNet architecture for critic/agent or old one"""
-    critic_n: int = 2
+    critic_n: int = 3
     """ How many layers of bronet for the bro agent """
-    critic_hidden_layer_size: int = 512
+    critic_hidden_layer_size: int = 1024
     """ How many hidden units in each layer of the bro agent critic BroNet """
     use_shampoo: bool = False
     """ Use shampoo optimizer instead of ADAM"""
