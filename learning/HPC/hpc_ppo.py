@@ -95,7 +95,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.01
+    weight_decay: float = 0.0 #1
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
