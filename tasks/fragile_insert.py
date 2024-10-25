@@ -31,6 +31,7 @@ class FragilePegInsert(PegInsertionSideEnv):
         super().__init__(*args, obs_mode=obs_mode, **kwargs)
         self._clearance = clearance
 
+    
     def _load_scene(self, options: dict):
         super()._load_scene(options)
         self.obsticles = [
@@ -114,4 +115,80 @@ class FragilePegInsert(PegInsertionSideEnv):
         #r -= 10 * info['fail'] # make them all -10!
         #print("dense reward:", r[0])
         return r
-        
+    
+    def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
+
+        # Stage 1: Encourage gripper to be rotated to be lined up with the peg
+
+        # Stage 2: Encourage gripper to move close to peg tail and grasp it
+        gripper_pos = self.agent.tcp.pose.p
+        tgt_gripper_pose = self.peg.pose
+        offset = sapien.Pose(
+            [-0.06, 0, 0]
+        )  # account for panda gripper width with a bit more leeway
+        tgt_gripper_pose = tgt_gripper_pose * (offset)
+        gripper_to_peg_dist = torch.linalg.norm(
+            gripper_pos - tgt_gripper_pose.p, axis=1
+        )
+        if self.old_gripper_to_peg_dist is None:
+            self.old_gripper_to_peg_dist = gripper_to_peg_dist
+            self.old_yz_dist = torch.zeros_like(self.old_gripper_to_peg_dist)
+            self.old_peg_insert_dist = torch.zeros_like(self.old_yz_dist)
+            
+        #reaching_reward = 1 - torch.tanh(4.0 * gripper_to_peg_dist)
+        reaching_reward = 20*(gripper_to_peg_dist - self.old_gripper_to_peg_dist)
+        self.old_gripper_to_peg_dist = gripper_to_peg_dist
+
+        # check with max_angle=20 to ensure gripper isn't grasping peg at an awkward pose
+        is_grasped = self.agent.is_grasping(self.peg, max_angle=20)
+        reward = reaching_reward + is_grasped
+
+        # Stage 3: Orient the grasped peg properly towards the hole
+
+        # pre-insertion award, encouraging both the peg center and the peg head to match the yz coordinates of goal_pose
+        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
+        peg_head_wrt_goal_yz_dist = torch.linalg.norm(
+            peg_head_wrt_goal.p[:, 1:], axis=1
+        )
+        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
+        peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
+
+        yz_dist = torch.maximum(peg_head_wrt_goal_yz_dist, peg_wrt_goal_yz_dist)
+
+        pre_insertion_reward = 3 * 20 * (yz_dist - self.old_yz_dist)
+        self.old_yz_dist = yz_dist
+        #pre_insertion_reward = 3 * (
+        #    1
+        #    - torch.tanh(
+        #        0.5 * (peg_head_wrt_goal_yz_dist + peg_wrt_goal_yz_dist)
+        #        + 4.5 * torch.maximum(peg_head_wrt_goal_yz_dist, peg_wrt_goal_yz_dist)
+        #    )
+        #)
+        reward += pre_insertion_reward * is_grasped
+        # stage 3 passes if peg is correctly oriented in order to insert into hole easily
+        pre_inserted = (peg_head_wrt_goal_yz_dist < 0.01) & (
+            peg_wrt_goal_yz_dist < 0.01
+        )
+
+        # Stage 4: Insert the peg into the hole once it is grasped and lined up
+        peg_head_wrt_goal_inside_hole = self.box_hole_pose.inv() * self.peg_head_pose
+        peg_insert_dist = torch.linalg.norm(peg_head_wrt_goal_inside_hole.p, axis=1)
+        #insertion_reward = 5 * (
+        #    1
+        #    - torch.tanh(
+        #        5.0 * torch.linalg.norm(peg_head_wrt_goal_inside_hole.p, axis=1)
+        #    )
+        #)
+        insertion_reward = 5 * 20 * (peg_insert_dist - self.old_peg_insert_dist)
+        self.old_peg_insert_dist = peg_insert_dist
+        reward += insertion_reward * (is_grasped & pre_inserted)
+
+        reward[info["success"]] = 10
+
+        return reward
+    
+    def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
+        self.old_peg_insert_dist = None
+        self.old_yz_dist = None
+        self.old_gripper_to_peg_dist = None
+        return super()._initialize_episode(env_idx, options)
