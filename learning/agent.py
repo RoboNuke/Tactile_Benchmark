@@ -335,7 +335,7 @@ class BroAgent(Agent):
         action_dist = self.actor(x)
         action_mean = action_dist[:,:self.act_size]
         action_logstd = action_dist[:,self.act_size:]
-        action_std = torch.exp(action_logstd)
+        action_std = torch.exp(action_logstd) + 0.005
         probs = Normal(action_mean, action_std)
         if action is None:
             action = probs.sample()
