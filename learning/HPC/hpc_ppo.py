@@ -95,7 +95,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.0 #1
+    weight_decay: float = 0.01
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
@@ -123,7 +123,7 @@ class Args:
     """Toggles advantages normalization"""
     clip_coef: float = 0.2
     """the surrogate clipping coefficient"""
-    clip_vloss: bool = False
+    clip_vloss: bool = True
     """Toggles whether or not to use a clipped loss for the value function, as per the paper."""
     ent_coef: float = 0.0
     """coefficient of the entropy"""
