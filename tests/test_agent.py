@@ -64,6 +64,32 @@ class TestAgent(unittest.TestCase):
         assert bn==batch_size, f'Batch size is {bn} but should be {batch_size}'
         assert fn==256, f'Feature output size is {fn} but should be 256'
 
+    def test_std_output(self):
+        batch_size=16
+        test_obs = {'state': torch.ones((batch_size,27)),
+                    'force': torch.ones((batch_size,3))
+        }
+        self.get_env()
+        Bro = BroAgent(self.envs, test_obs)
+        act_size = np.prod(self.envs.unwrapped.single_action_space.shape)
+
+        act = Bro.get_action(test_obs)
+
+        self.assert_size(act, batch_size, act_size, "Action:Action")
+
+        act, logprob, ent, val = Bro.get_action_and_value(test_obs)
+
+        self.assert_size(act, batch_size, act_size, "Action+Value:Action")
+        self.assert_size(logprob, batch_size, 1, "Action+Value:LogProb")
+        self.assert_size(ent, batch_size, 1, "Action+Value:Entropy")
+        self.assert_size(val, batch_size, 1, "Action+Value:Value")
+    
+    def assert_size(self, thing, batch_size, out_size, name=""):
+        assert thing.size()[0] == batch_size, f"Output {name} batch size is incorrect {thing.size()[0]}, {batch_size}"
+        if len(thing.size())>1:
+            assert (thing.size()[1] == out_size), f"Output {name} out size is incorrect {thing.size()[1]}, {out_size}"
+
+
     """
     def test_rgb_extractor(self):
         self.get_env(obs_mode='rgb')
