@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --array=1-1             # set up the array
-#SBATCH -J CLIPV			    # name of job
+#SBATCH -J ALR			    # name of job
 #SBATCH -A virl-grp	            # name of my sponsored account, e.g. class or research group, NOT ONID!
 #SBATCH -p eecs2 # dgx2				# name of partition or queue
 #SBATCH --time=0-12:00:00        # time limit on job: 2 days, 12 hours, 30 minutes (default 12 hours)
@@ -8,8 +8,8 @@
 #SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
 #SBATCH --mem=16G               # request 10 gigabytes memory (per node, default depends on node)
 #SBATCH -c 2                    # number of cores/threads per task (default 1)
-#SBATCH -o ../outs/CLIPV_%A_%a.out		# name of output file for this submission script
-#SBATCH -e ../outs/CLIPV_%A_%a.err		# name of error file for this submission script
+#SBATCH -o ../outs/ALR_%A_%a.out		# name of output file for this submission script
+#SBATCH -e ../outs/ALR_%A_%a.err		# name of error file for this submission script
 # load any software environment module required for app (e.g. matlab, gcc, cuda)
 
 
