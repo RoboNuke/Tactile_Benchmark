@@ -136,7 +136,9 @@ class FragilePegInsert(PegInsertionSideEnv):
             self.old_peg_insert_dist = torch.zeros_like(self.old_yz_dist)
             
         #reaching_reward = 1 - torch.tanh(4.0 * gripper_to_peg_dist)
-        reaching_reward = 20*(gripper_to_peg_dist - self.old_gripper_to_peg_dist)
+        reaching_reward = 20*(
+            self.old_gripper_to_peg_dist - gripper_to_peg_dist
+        )
         self.old_gripper_to_peg_dist = gripper_to_peg_dist
 
         # check with max_angle=20 to ensure gripper isn't grasping peg at an awkward pose
@@ -155,7 +157,7 @@ class FragilePegInsert(PegInsertionSideEnv):
 
         yz_dist = torch.maximum(peg_head_wrt_goal_yz_dist, peg_wrt_goal_yz_dist)
 
-        pre_insertion_reward = 3 * 20 * (yz_dist - self.old_yz_dist)
+        pre_insertion_reward = 3 * 20 * (self.old_yz_dist - yz_dist)
         self.old_yz_dist = yz_dist
         #pre_insertion_reward = 3 * (
         #    1
@@ -179,7 +181,7 @@ class FragilePegInsert(PegInsertionSideEnv):
         #        5.0 * torch.linalg.norm(peg_head_wrt_goal_inside_hole.p, axis=1)
         #    )
         #)
-        insertion_reward = 5 * 20 * (peg_insert_dist - self.old_peg_insert_dist)
+        insertion_reward = 5 * 20 * (self.old_peg_insert_dist - peg_insert_dist)
         self.old_peg_insert_dist = peg_insert_dist
         reward += insertion_reward * (is_grasped & pre_inserted)
 

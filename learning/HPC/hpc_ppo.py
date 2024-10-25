@@ -79,9 +79,9 @@ class Args:
     """ Force to break the peg or the table """
     use_bro_agent: bool = True
     """ Use BroNet architecture for critic/agent or old one"""
-    critic_n: int = 3
+    critic_n: int = 2
     """ How many layers of bronet for the bro agent """
-    critic_hidden_layer_size: int = 1024
+    critic_hidden_layer_size: int = 512
     """ How many hidden units in each layer of the bro agent critic BroNet """
     use_shampoo: bool = False
     """ Use shampoo optimizer instead of ADAM"""
@@ -95,7 +95,7 @@ class Args:
     """total timesteps of the experiments"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
-    weight_decay: float = 0.01
+    weight_decay: float = 0.0#0.01
     """the weight decay precent for optimizer"""
     num_envs: int = 16
     """the number of parallel environments"""
