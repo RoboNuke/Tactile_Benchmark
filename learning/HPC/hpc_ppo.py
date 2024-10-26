@@ -101,9 +101,9 @@ class Args:
     """the learning rate of the optimizer"""
     weight_decay: float = 0.0#0.01
     """the weight decay precent for optimizer"""
-    num_envs: int = 7
+    num_envs: int = 16
     """the number of parallel environments"""
-    num_eval_envs: int = 3
+    num_eval_envs: int = 8
     """the number of parallel evaluation environments"""
     partial_reset: bool = True
     """whether to let parallel environments reset upon termination instead of truncation"""

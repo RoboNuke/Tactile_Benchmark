@@ -107,16 +107,16 @@ class FragilePegInsert(PegInsertionSideEnv):
         brokeFlag = self.maximum_peg_force <= max_forces
         return brokeFlag, max_forces, resp_actor
 
-    def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
+    #def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
         #print("Computing dense reward")
-        r = super().compute_dense_reward(obs, action, info)
+    #    r = super().compute_dense_reward(obs, action, info)
         #r[info['success']] *= 10
         #r *= torch.logical_not(info['fail']) # zero out all failed cases
         #r -= 10 * info['fail'] # make them all -10!
         #print("dense reward:", r[0])
-        return r
+    #    return r
     
-    """
+    
     def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
 
         # Stage 1: Encourage gripper to be rotated to be lined up with the peg
@@ -156,7 +156,7 @@ class FragilePegInsert(PegInsertionSideEnv):
         peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
         peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
 
-        yz_dist = torch.maximum(peg_head_wrt_goal_yz_dist, peg_wrt_goal_yz_dist)
+        yz_dist = 0.5 * (peg_head_wrt_goal_yz_dist+peg_wrt_goal_yz_dist) + 4.5 * torch.maximum(peg_head_wrt_goal_yz_dist, peg_wrt_goal_yz_dist)
 
         pre_insertion_reward = 3 * 20 * (self.old_yz_dist - yz_dist)
         self.old_yz_dist = yz_dist
@@ -195,4 +195,4 @@ class FragilePegInsert(PegInsertionSideEnv):
         self.old_yz_dist = None
         self.old_gripper_to_peg_dist = None
         return super()._initialize_episode(env_idx, options)
-    """
+    
