@@ -27,9 +27,9 @@ class FragilePegInsert(PegInsertionSideEnv):
         if 'no_ft' in obs_mode:
             self.return_force_data = False
             obs_mode=obs_mode[:-6]
+        self._clearance = clearance
 
         super().__init__(*args, obs_mode=obs_mode, **kwargs)
-        self._clearance = clearance
 
     
     def _load_scene(self, options: dict):
