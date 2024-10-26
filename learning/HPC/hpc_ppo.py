@@ -10,7 +10,7 @@ from collections import defaultdict
 import os
 import random
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import gymnasium as gym
@@ -35,6 +35,7 @@ from data.data_manager import DataManager
 from tasks.wiping import *
 from tasks.barnicle_scrap import *
 from tasks.fragile_insert import *
+from tasks.for_env import *
 from wrappers.smoothness_obs_wrapper import SmoothnessObservationWrapper
 
 @dataclass
@@ -63,7 +64,7 @@ class Args:
     """the environment rendering mode"""
 
     # exp specific info
-    obs_mode: str = 'rgb'
+    obs_mode: str = 'state_dict_no_ft'
     """the observation mode for the robot"""
     control_mode: str = 'pd_joint_delta_pos'
     """the action space or control mode"""
@@ -77,7 +78,10 @@ class Args:
     """Which robot to use """
     exp_max_dmg_force: float = 500.0
     """ Force to break the peg or the table """
-    use_bro_agent: bool = True
+    norm_force: list = field(
+        default_factory=lambda :[500.0, 1000])
+    """ Force to remove an attached object """
+    use_bro_agent: bool = False
     """ Use BroNet architecture for critic/agent or old one"""
     critic_n: int = 2
     """ How many layers of bronet for the bro agent """
@@ -87,7 +91,7 @@ class Args:
     """ Use shampoo optimizer instead of ADAM"""
 
     # Algorithm specific arguments
-    env_id: str = "FragilePegInsert-v1"
+    env_id: str = "ForeignObjectRemoval-v1"
     """the id of the environment"""
     include_state: bool = True
     """whether to include state information in observations"""
@@ -97,9 +101,9 @@ class Args:
     """the learning rate of the optimizer"""
     weight_decay: float = 0.0#0.01
     """the weight decay precent for optimizer"""
-    num_envs: int = 16
+    num_envs: int = 7
     """the number of parallel environments"""
-    num_eval_envs: int = 8
+    num_eval_envs: int = 3
     """the number of parallel evaluation environments"""
     partial_reset: bool = True
     """whether to let parallel environments reset upon termination instead of truncation"""
@@ -229,6 +233,8 @@ if __name__ == "__main__":
         sim_backend="gpu",
         dmg_force=args.exp_max_dmg_force
     )
+    if args.env_id == "ForeignObjectRemoval-v1":
+        env_kwargs['obj_norm_force'] = args.norm_force
 
     eval_envs = gym.make(
         args.env_id, 
@@ -364,7 +370,8 @@ if __name__ == "__main__":
     global_step = 0
     start_time = time.time()
     next_obs, _ = envs.reset(seed=args.seed)
-    eval_obs, _ = eval_envs.reset(seed=args.seed)
+    print(next_obs['state'].size())
+    eval_obs, _ = eval_envs.reset()#seed=args.seed)
     next_done = torch.zeros(args.num_envs, device=device)
     eps_returns = torch.zeros(args.num_envs, dtype=torch.float, device=device)
     eps_lens = np.zeros(args.num_envs)

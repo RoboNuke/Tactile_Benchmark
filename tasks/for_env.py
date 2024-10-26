@@ -29,8 +29,6 @@ class FOREnv(BaseEnv):
     # scene vars
     scene: ManiSkillScene
     agent: Union[Panda, Fetch]
-    objs: List[Actor] = []
-    kin_objs: List[Actor] = []
     table_top: Actor
     TABLE_DMG_FORCE: float = 25.0
     OBJ_STACK: int = 1
@@ -48,7 +46,7 @@ class FOREnv(BaseEnv):
     OBJ_NORMAL_FORCE_MAX: float = 25.0
 
     def __init__(self, *args, 
-                 dmg_table_force = 25.0,
+                 dmg_force = 25.0,
                  obj_norm_force = [0.5, 25.0], 
                  stack = 1,
                  obs_mode= 'state',
@@ -62,9 +60,11 @@ class FOREnv(BaseEnv):
             obs_mode=obs_mode[:-6]
 
         # set table vars
-        self.TABLE_DMG_FORCE = dmg_table_force
+        self.TABLE_DMG_FORCE = dmg_force
         self.OBJ_NORMAL_FORCE_MIN = obj_norm_force[0]
         self.OBJ_NORMAL_FORCE_MAX = obj_norm_force[1]
+        self.objs = []
+        self.kin_objs = []
         super().__init__(*args, obs_mode=obs_mode, **kwargs)
 
     
@@ -260,9 +260,10 @@ class FOREnv(BaseEnv):
             self.obj_starts[env_idx,:2] = pos[:,:2]
             self.obj_starts[env_idx, 2] = self.TABLE_TOP_THICKNESS
             self.step_moved[env_idx] = -1
-            
+            print(self.kin_objs)
             for stack_idx in range(self.OBJ_STACK):
                 pos[:,2] += self.hs[env_idx]/(self.OBJ_STACK * 2.0)
+                print(pos.size(), quat.size())
                 self.kin_objs[stack_idx].set_pose(Pose.create_from_pq(pos, quat))
                 self.objs[stack_idx].set_pose(sapien.Pose([10,10,0.0]))
                 
@@ -273,6 +274,7 @@ class FOREnv(BaseEnv):
             )
 
             self.max_table_force[env_idx] *= 0.0
+            print("init env")
 
 
     def compute_net_robot_force(self, norm=False):
