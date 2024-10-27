@@ -116,7 +116,7 @@ class FragilePegInsert(PegInsertionSideEnv):
         #print("dense reward:", r[0])
     #    return r
     
-    """
+    
     def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
 
         # Stage 1: Encourage gripper to be rotated to be lined up with the peg
@@ -195,4 +195,4 @@ class FragilePegInsert(PegInsertionSideEnv):
         self.old_yz_dist = None
         self.old_gripper_to_peg_dist = None
         return super()._initialize_episode(env_idx, options)
-    """
+    
