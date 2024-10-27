@@ -305,18 +305,19 @@ class BroAgent(Agent):
         
         self.critic = BroNet(critic_n, in_size, 1, critic_latent, device, tanh_out=False).to(device)
         
-        self.actors = [BroNet(actor_n, in_size, 2*self.act_size, actor_latent, device, tanh_out=True) for i in range(tot_actors)]
+        self.actors = [BroNet(actor_n, in_size, self.act_size, actor_latent, device, tanh_out=True) for i in range(tot_actors)]
         
         for actor in self.actors:
             layer_init(actor.output[-2], std=0.01*np.sqrt(2)) 
             actor.to(device)
-        #self.actor_logstds = [nn.Parameter(torch.ones(1, out_size) * -0.5).to(device) for i in range(tot_actors)]
-        #for logstd in self.actor_logstds:
-        #    logstd.to(device)
+        self.actor_logstds = [nn.Parameter(torch.ones(1, self.act_size) * -0.5).to(device) for i in range(tot_actors)]
+        for logstd in self.actor_logstds:
+            logstd.to(device)
         if tot_actors == 1:
             self.actor = self.actors[0]
-            #self.actor_logstd = self.actor_logstds[0]
-        
+            self.actor_logstd = self.actor_logstds[0]
+
+    """  
     def get_action(self, x, deterministic=False):
         #print("in x:", [x[k].size() for k in x])
         x = self.feature_net(x)
@@ -340,3 +341,4 @@ class BroAgent(Agent):
         if action is None:
             action = probs.sample()
         return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)
+    """
