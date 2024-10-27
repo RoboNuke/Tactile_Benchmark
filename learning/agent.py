@@ -314,7 +314,7 @@ class BroAgent(Agent):
         for logstd in self.actor_logstds:
             logstd.to(device)
         if tot_actors == 1:
-            self.actor = self.actors[0]
+            self.actor_mean = self.actors[0]
             self.actor_logstd = self.actor_logstds[0]
 
     """  

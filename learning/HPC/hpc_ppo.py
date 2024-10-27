@@ -81,7 +81,7 @@ class Args:
     norm_force: list = field(
         default_factory=lambda :[500.0, 1000])
     """ Force to remove an attached object """
-    use_bro_agent: bool = False
+    use_bro_agent: bool = True
     """ Use BroNet architecture for critic/agent or old one"""
     critic_n: int = 2
     """ How many layers of bronet for the bro agent """
