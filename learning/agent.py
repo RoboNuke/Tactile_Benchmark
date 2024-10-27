@@ -312,7 +312,7 @@ class BroAgent(Agent):
         #    layer_init(actor.output[-2], std=0.01*np.sqrt(2)) 
         #    actor.to(device)
         #self.actor_logstds = [nn.Parameter(torch.ones(1, self.act_size) * -0.5).to(device) for i in range(tot_actors)]
-        self.actor_logstds = nn.Parameter(torch.ones(1, self.act_size) * -0.5).to(device)
+        self.actor_logstd = nn.Parameter(torch.ones(1, self.act_size) * -0.5).to(device)
         #for logstd in self.actor_logstds:
         #    logstd.to(device)
         #if tot_actors == 1:
