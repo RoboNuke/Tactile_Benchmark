@@ -35,6 +35,7 @@ from data.data_manager import DataManager
 from tasks.wiping import *
 from tasks.barnicle_scrap import *
 from tasks.fragile_insert import *
+from tasks.simple_fPiH import *
 from tasks.for_env import *
 from wrappers.smoothness_obs_wrapper import SmoothnessObservationWrapper
 

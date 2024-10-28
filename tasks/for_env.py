@@ -1,4 +1,3 @@
-
 import sapien.core as sapien
 from mani_skill.utils import sapien_utils, common
 from mani_skill.envs.sapien_env import BaseEnv

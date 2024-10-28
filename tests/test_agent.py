@@ -89,7 +89,6 @@ class TestAgent(unittest.TestCase):
         if len(thing.size())>1:
             assert (thing.size()[1] == out_size), f"Output {name} out size is incorrect {thing.size()[1]}, {out_size}"
 
-
     """
     def test_rgb_extractor(self):
         self.get_env(obs_mode='rgb')
