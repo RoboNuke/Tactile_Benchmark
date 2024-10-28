@@ -172,7 +172,7 @@ class TestFPiH(unittest.TestCase):
         #assert torch.all(~eout['success']), f'Starting in successful state {eout['success']}'
 
         # move all the pegs
-        uw.peg.set_pose(uw.box.pose * uw.box_hole_offsets)
+        uw.peg.set_pose(uw.goal_pose)
         eout2 = uw.evaluate()
         assert torch.all(eout2['success']), f'Not all pegs succeeded {eout2}'
 

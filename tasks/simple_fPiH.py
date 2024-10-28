@@ -126,9 +126,8 @@ class SimpleFragilePiH(BaseEnv):
     
     def has_peg_inserted(self):
         gpp = self.goal_pose.p
-
-        dist = torch.linalg.norm(gpp - self.box.pose.p)
-        return dist < self.HOLE_RADIUS/2
+        dist = torch.linalg.norm(gpp - self.peg.pose.p, axis=1)
+        return dist < .005
     """
     def has_peg_inserted(self):
         # Only head position is used in fact
@@ -325,6 +324,7 @@ class SimpleFragilePiH(BaseEnv):
         out_dic['fail'] = torch.logical_or(~self.agent.is_grasping(self.peg), out_dic['fail'])
         self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
         out_dic['max_dmg_force'] = self.max_peg_force
+        #print(out_dic['success'].size(), out_dic['fail'].size())
         out_dic['success'] *= ~out_dic['fail']
         #self.termed[torch.logical_or(out_dic['fail'], out_dic['success'])] = True
         return out_dic
