@@ -125,6 +125,12 @@ class SimpleFragilePiH(BaseEnv):
         return self.box.pose * self.box_hole_offsets * self.peg_head_offsets.inv()
     
     def has_peg_inserted(self):
+        gpp = self.goal_pose.p
+
+        dist = torch.linalg.norm(gpp - self.box.pose.p)
+        return dist < self.HOLE_RADIUS/2
+    """
+    def has_peg_inserted(self):
         # Only head position is used in fact
         peg_head_pos_at_hole = (self.box_hole_pose.inv() * self.peg_head_pose).p
         # x-axis is hole direction
@@ -139,7 +145,7 @@ class SimpleFragilePiH(BaseEnv):
             x_flag & y_flag & z_flag,
             peg_head_pos_at_hole,
         )
-
+    """
     def _load_scene(self, options: dict):
         """
             When reconfigure:
@@ -313,12 +319,13 @@ class SimpleFragilePiH(BaseEnv):
             Success: All objs have moved + robot arm is still w/o failure
             Failure: Too many steps w/o success or Table force > max table force
         """
-        success, peg_head_pos_at_hole = self.has_peg_inserted()
-        out_dic = dict(success=success, peg_head_pos_at_hole=peg_head_pos_at_hole)
+        success = self.has_peg_inserted()
+        out_dic = dict(success=success)
         out_dic['fail'], out_dic['dmg_force'], out_dic['fail_cause'] = self.pegBroke()
         out_dic['fail'] = torch.logical_or(~self.agent.is_grasping(self.peg), out_dic['fail'])
         self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
         out_dic['max_dmg_force'] = self.max_peg_force
+        out_dic['success'] *= ~out_dic['fail']
         #self.termed[torch.logical_or(out_dic['fail'], out_dic['success'])] = True
         return out_dic
 
