@@ -38,6 +38,7 @@ from tasks.fragile_insert import *
 from tasks.simple_fPiH import *
 from tasks.for_env import *
 from wrappers.smoothness_obs_wrapper import SmoothnessObservationWrapper
+from wrappers.closed_gripper import *
 
 @dataclass
 class Args:
@@ -77,6 +78,8 @@ class Args:
     """Reward mode to use during training"""
     robot: str = "panda"
     """Which robot to use """
+    lock_gripper: bool = True
+    """To make the gripper always closed"""
     exp_max_dmg_force: float = 500.0
     """ Force to break the peg or the table """
     norm_force: list = field(
@@ -315,6 +318,9 @@ if __name__ == "__main__":
         force=args.include_force
     )
 
+    if args.lock_gripper:
+        envs = CloseGripperActionSpaceWrapper(envs)
+        eval_envs = CloseGripperActionSpaceWrapper(eval_envs)
 
     if args.capture_video:
         

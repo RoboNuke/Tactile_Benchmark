@@ -41,6 +41,7 @@ force_encoding=${11}
 critic_n=${12}
 critic_l=${13}
 use_shampoo=${14}
+lock_gripper=${15}
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
@@ -56,6 +57,11 @@ fi
 
 date=$(date +"%Y-%m-%d_%H:%M")
 #_${date}"
+if [ $lock_gripper -eq 1 ]; then
+    lock_gripper='lock_gripper'
+else
+    lock_gripper='no-lock-gripper'
+fi
 
 if [ $save_model -eq 1 ]; then
     save_model='save_model'
@@ -125,7 +131,8 @@ do
         --exp-max-dmg-force=$dmg_force \
         --critic_n=$critic_n \
         --critic_hidden_layer_size=$critic_l \
-        --$use_shampoo
+        --$use_shampoo \
+        --$lock_gripper
 done
 
 

@@ -5,7 +5,7 @@ num_steps=150
 total_timesteps=50000000
 
 obs_types=("state_dict_no_ft") # "state_dict") # "rgb" "rgb_no_ft")
-dmg_vals=("500.0") # "100.0" "50.0" "250.0" "100000.0")  "500.0" 
+dmg_vals=("100000.0") # "100.0" "50.0" "250.0" "100000.0")  "500.0" 
 control_modes=("pd_joint_delta_pos")
 reward_modes=("normalized_dense")
 force_encodings=("FFN")
@@ -14,6 +14,7 @@ force_encodings=("FFN")
 critic_n=("2")
 critic_l=("512")
 use_shampoo=0
+lock_gripper=1
 
 tmux new-session -d -s "Holder"
 for control_mode in ${control_modes[@]}; do
@@ -24,7 +25,7 @@ for control_mode in ${control_modes[@]}; do
 		            echo ${dmg_val} ${obs_type}
 		            #for (( i=0; i<4; i++ )); do	
                     #echo "    " ${critic_n[$i]} ${critic_l[$i]}
-		                exp_name="fin_FPiH"
+		                exp_name="lock_FPiH"
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
                             $obs_type \
@@ -37,7 +38,8 @@ for control_mode in ${control_modes[@]}; do
                             $force_encoding \
                             "2" \
                             "512" \
-                            $use_shampoo
+                            $use_shampoo \
+                            $lock_gripper
                             # ${critic_l[0]} 
 		            #done	
                 done
