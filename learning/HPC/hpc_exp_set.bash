@@ -5,7 +5,7 @@ num_steps=150
 total_timesteps=50000000
 
 obs_types=("state_dict_no_ft") # "state_dict") # "rgb" "rgb_no_ft")
-dmg_vals=("100000.0") # "100.0" "50.0" "250.0" "100000.0")  "500.0" 
+dmg_vals=("100000.0") # "50.0" "100.0" "250.0" "500.0" ) 
 control_modes=("pd_joint_delta_pos")
 reward_modes=("normalized_dense")
 force_encodings=("FFN")
@@ -21,11 +21,22 @@ for control_mode in ${control_modes[@]}; do
     for reward_mode in ${reward_modes[@]}; do
         for force_encoding in ${force_encodings[@]}; do
             for obs_type in ${obs_types[@]}; do
+                if [[ $obs_type == *"no_ft"* ]]; then
+                    f_code="no-ft"
+                else
+                    f_code="ft"
+                fi
                 for dmg_val in ${dmg_vals[@]}; do
-		            echo ${dmg_val} ${obs_type}
+		            #echo ${dmg_val} ${obs_type}
 		            #for (( i=0; i<4; i++ )); do	
                     #echo "    " ${critic_n[$i]} ${critic_l[$i]}
-		                exp_name="ldis_FPiH"
+                    if [[ $dmg_val == "100000.0" ]]; then
+                        dmg_code="None"
+                    else
+                        dmg_code=$dmg_val
+                    fi
+		                exp_name="ent2_FPiH" #"SFPiH_(${f_code})_($dmg_code)"
+                        echo $exp_name
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
                             $obs_type \

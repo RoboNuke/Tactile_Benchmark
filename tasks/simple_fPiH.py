@@ -133,7 +133,7 @@ class SimpleFragilePiH(BaseEnv):
         pp = self.peg_head_pose.p # self.peg.pose.p
         inserted = torch.abs(gpp[:,0]-pp[:,0]) <= self._clearance
         inserted = torch.logical_and(inserted, torch.abs(gpp[:,1]-pp[:,1]) < self._clearance)
-        inserted = torch.logical_and(inserted, torch.abs(gpp[:,2]-pp[:,2]) < 0.005)
+        inserted = torch.logical_and(inserted, torch.abs(gpp[:,2]-pp[:,2]) < self._clearance)
         return inserted 
     """
     def has_peg_inserted(self):
@@ -261,8 +261,8 @@ class SimpleFragilePiH(BaseEnv):
             self.peg = Actor.merge(pegs, "peg")
             self.box = Actor.merge(boxes, "box_with_hole")
         self.obsticles = [
-            self.agent.finger1_link,
-            self.agent.finger2_link,
+            #self.agent.finger1_link,
+            #self.agent.finger2_link,
             self.box
         ]  
         self.max_peg_force = torch.zeros((self.num_envs), device=self.device)

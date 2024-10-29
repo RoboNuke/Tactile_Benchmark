@@ -1,5 +1,5 @@
 #!/bin/bash
-SESSION_NAME="Fragile_Baseline"
+SESSION_NAME="Baseline_Testing"
 #NUM_WINDOWS=5
 gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_launch.bash"
 tmux new-session -d -s "$SESSION_NAME"
@@ -15,7 +15,7 @@ done
 
 window_count=$(tmux list-windows | wc -l)
 while [ $window_count -gt 0 ]; do
-    sleep 60
+    sleep 600
     window_count=$(tmux list-windows | wc -l)
     if [ "$window_count" -eq 1 ]; then
         # Close the tmux session
