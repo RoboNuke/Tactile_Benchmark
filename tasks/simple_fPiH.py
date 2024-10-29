@@ -363,11 +363,11 @@ class SimpleFragilePiH(BaseEnv):
             - actual insertion 0-1
             total max reward: 2
         """
-        is_grasped = self.agent.is_grasping(self.peg, max_angle=20)
+        is_grasped = self.agent.is_grasping(self.peg)
         
         dist = torch.linalg.norm(self.goal_pose.p - self.peg.pose.p, axis=1)
 
-        reward =  1 - torch.tanh(5 * dist) - (1 - is_grasped)
+        reward =  1 - torch.tanh(5 * dist) - (~is_grasped)
         reward[info["success"]] = self.max_reward
 
         return reward
