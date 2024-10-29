@@ -1,10 +1,10 @@
 import unittest
 from tasks.simple_fPiH import SimpleFragilePiH
-import h5py
+#import h5py
 import numpy as np
 import mani_skill.envs
-from mani_skill.trajectory import utils as trajectory_utils
-from mani_skill.trajectory.merge_trajectory import merge_h5
+#from mani_skill.trajectory import utils as trajectory_utils
+#from mani_skill.trajectory.merge_trajectory import merge_h5
 from mani_skill.utils import common, io_utils, wrappers
 import gymnasium as gym
 import torch
@@ -77,9 +77,9 @@ class TestFPiH(unittest.TestCase):
         for i in range(1):
             self.envs.reset(options={"reconfigure":True})
             while True:
-                x = self.envs.step(self.envs.unwrapped.action_space.sample()*0)
+                obs, rew, _, _, _ = self.envs.step(self.envs.unwrapped.action_space.sample()*0)
                 self.envs.render_human()
-                print(x)
+                print(rew)
                 #print(uw.agent.tcp.pose)
                 time.sleep(0.01)
             #for k in range(2):

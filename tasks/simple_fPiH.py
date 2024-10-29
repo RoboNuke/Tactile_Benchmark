@@ -56,14 +56,17 @@ class SimpleFragilePiH(BaseEnv):
 
     # scene vars
     scene: ManiSkillScene
-    agent: Union[Panda, Fetch]
-
+    agent: Union[Panda, Fetch] 
+                
     # env vars
     PEG_MAX_FORCE: float = 500.0
-    PEG_S: float = 0.01
+    PEG_LEN_MIN: float = 0.0425 #0.085
+    PEG_LEN_MAX: float = 0.0625 #0.125
+    PEG_W_MIN: float = 0.015
+    PEG_W_MAX: float = 0.025
     HOLE_RADIUS = 0.05
     TIGHT_MIN = 0.75 # as percentage of peg_s
-    TIGHT_MAX = 0.95
+    TIGHT_MAX = 0.85
     
     # constants
     max_reward: float = 2.0
@@ -73,7 +76,7 @@ class SimpleFragilePiH(BaseEnv):
                  dmg_force = 25.0,
                  obs_mode= 'state_dict',
                  **kwargs):
-        self.maximum_peg_force = dmg_force
+        self.PEG_MAX_FORCE = dmg_force
         self.return_force_data = True
         if 'no_ft' in obs_mode:
             self.return_force_data = False
@@ -112,11 +115,11 @@ class SimpleFragilePiH(BaseEnv):
 
     @property
     def peg_head_pose(self):
-        return self.peg.pose * self.peg_head_offsets
+        return self.peg.pose * self.peg_head_offsets.inv()
 
     @property
     def box_hole_pose(self):
-        return self.box.pose * self.box_hole_offsets
+        return self.box.pose * self.box_hole_offsets #* self.peg_head_offsets.inv()
 
     @property
     def goal_pose(self):
@@ -125,9 +128,19 @@ class SimpleFragilePiH(BaseEnv):
         return self.box.pose * self.box_hole_offsets * self.peg_head_offsets.inv()
     
     def has_peg_inserted(self):
-        gpp = self.goal_pose.p
-        dist = torch.linalg.norm(gpp - self.peg.pose.p, axis=1)
-        return dist < .005
+    
+        gpp = self.box_hole_pose.p
+        pp = self.peg_head_pose.p # self.peg.pose.p
+        #print(f"goal:{gpp}\tpeg:{pp}\t{gpp-pp}")
+        inserted = torch.abs(gpp[:,0]-pp[:,0]) <= self._clearance
+        #print("x:", inserted)
+        inserted = torch.logical_and(inserted, torch.abs(gpp[:,1]-pp[:,1]) < self._clearance)
+        #print("y:", torch.abs(gpp[:,1]-pp[:,1]) < self._clearance)
+        inserted = torch.logical_and(inserted, torch.abs(gpp[:,2]-pp[:,2]) < 0.005)
+        #print("z:", torch.abs(gpp[:,2]-pp[:,2]) < 0.005)
+        dist = torch.linalg.norm(gpp - pp, axis=1)
+        #print('Inserted:', inserted, '\tdist:', dist)
+        return inserted # dist < .005
     """
     def has_peg_inserted(self):
         # Only head position is used in fact
@@ -156,20 +169,25 @@ class SimpleFragilePiH(BaseEnv):
             self.table_scene.build()
 
             lengths = randomization.uniform(
-                0.085, 
-                0.125,  
+                self.PEG_LEN_MIN, #0.085, 
+                self.PEG_LEN_MAX, #0.125,  
                 size=(self.num_envs,)
             )
             radii = randomization.uniform(
-                0.015, 
-                0.025,  
+                self.PEG_W_MIN, #0.015, 
+                self.PEG_W_MAX, #0.025,  
                 size=(self.num_envs,)
             )
-            centers = (
-                0.5
-                * (lengths - radii)[:, None]
-                * randomization.uniform(-1, 1, size=(2,))
+            centers = randomization.uniform(
+                -0.5 * (lengths - radii)[:, None], #0.015, 
+                0.5 * (lengths - radii)[:, None], #0.025,  
+                size=(self.num_envs,2)
             )
+            #(
+            #    0.5
+            #    * (lengths - radii)[:, None]
+            #    * randomization.uniform(-1, 1, size=(2,))
+            #)
 
             d = randomization.uniform(
                 self.TIGHT_MIN,
@@ -189,6 +207,7 @@ class SimpleFragilePiH(BaseEnv):
             self.peg_head_offsets = Pose.create_from_pq(p=peg_head_offsets)
 
             box_hole_offsets = torch.zeros((self.num_envs, 3))
+            box_hole_offsets[:, 0] = -lengths/2
             box_hole_offsets[:, 1:] = common.to_tensor(centers)
             self.box_hole_offsets = Pose.create_from_pq(p=box_hole_offsets)
             self.box_hole_radii = common.to_tensor(radii + self._clearance)
@@ -233,7 +252,7 @@ class SimpleFragilePiH(BaseEnv):
 
                 inner_radius, outer_radius, depth = (
                     radius + clearance,
-                    length,
+                    length*4,
                     length,
                 )
                 builder = _build_box_with_hole(
@@ -253,7 +272,7 @@ class SimpleFragilePiH(BaseEnv):
             self.box
         ]  
         self.max_peg_force = torch.zeros((self.num_envs), device=self.device)
-        
+        self.lengths = 4*lengths
 
     def _initialize_episode(self, 
                             env_idx: torch.Tensor, 
@@ -305,11 +324,13 @@ class SimpleFragilePiH(BaseEnv):
             self.agent.robot.set_qpos(qpos)
             # ensure all updates to object poses and configurations are applied on GPU after task initialization
             
-            
-            self.scene._gpu_apply_all()
-            self.scene.px.gpu_update_articulation_kinematics()
-            self.scene._gpu_fetch_all()
-            
+            try:
+                self.scene._gpu_apply_all()
+                self.scene.px.gpu_update_articulation_kinematics()
+                self.scene._gpu_fetch_all()
+            except:
+                pass
+
             self.agent.robot.set_pose(sapien.Pose([-0.615, 0, 0]))
             self.peg.set_pose(
                 self.agent.tcp.pose[env_idx,:] *
@@ -330,6 +351,7 @@ class SimpleFragilePiH(BaseEnv):
         out_dic['max_dmg_force'] = self.max_peg_force
         #print(out_dic['success'].size(), out_dic['fail'].size())
         out_dic['success'] *= ~out_dic['fail']
+        #print('suc:', out_dic['success'])
         #self.termed[torch.logical_or(out_dic['fail'], out_dic['success'])] = True
         return out_dic
 
@@ -361,22 +383,32 @@ class SimpleFragilePiH(BaseEnv):
             Reward types:
             - reaching to pre insertion max: 0-1
             - actual insertion 0-1
-            total max reward: 2
+            total max reward: 1
         """
         is_grasped = self.agent.is_grasping(self.peg)
+        is_over_box = self.over_box()
         
-        dist = torch.linalg.norm(self.goal_pose.p - self.peg.pose.p, axis=1)
+        dist = torch.linalg.norm(self.box_hole_pose.p - self.peg_head_pose.p, axis=1)
 
-        reward =  1 - torch.tanh(5 * dist) #- (~is_grasped)*1.0
+        reward =  (1 - torch.tanh(5 * dist) - (~is_grasped)*1.0) * is_over_box
         reward[info["success"]] = self.max_reward
-
+        #print(f"g:{is_grasped}\to:{is_over_box}\td:{dist}\tr:{reward}")
         return reward
     
     def compute_normalized_dense_reward(self, 
             obs: Any, 
             action: torch.Tensor, 
             info: Dict):
-        return self.compute_dense_reward(obs, action, info)/self.max_reward
+        return self.compute_dense_reward(obs, action, info)
+    
+    def over_box(self):
+        bp = self.box.pose.p
+        pp = self.peg.pose.p
+        over = pp[:,0] < self.lengths + bp[:,0]
+        over = torch.logical_and(over, pp[:,0] > (-self.lengths + bp[:,0]))
+        over = torch.logical_and(over, pp[:,1] < (self.lengths + bp[:,1]))
+        over = torch.logical_and(over, self.peg.pose.p[:,1] > (-self.lengths + bp[:,1]))
+        return over
     
     def getPegForce(self, object: Actor):
 
@@ -403,7 +435,7 @@ class SimpleFragilePiH(BaseEnv):
             
             max_forces = torch.maximum( max_forces, obs_forces)
 
-        brokeFlag = self.maximum_peg_force <= max_forces
+        brokeFlag = self.PEG_MAX_FORCE <= max_forces
         return brokeFlag, max_forces, resp_actor
 
     
