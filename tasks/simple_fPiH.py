@@ -328,7 +328,7 @@ class SimpleFragilePiH(BaseEnv):
             self.agent.robot.set_pose(sapien.Pose([-0.615, 0, 0]))
             self.peg.set_pose(
                 self.agent.tcp.pose[env_idx,:] *
-                sapien.Pose([0.0,0,-0.03], [0.0,-0.707,0.0,0.707]) *
+                sapien.Pose([0.0,0,-0.02], [0.0,-0.707,0.0,0.707]) *
                 self.peg_head_offsets[env_idx,:].inv() 
             )
 
