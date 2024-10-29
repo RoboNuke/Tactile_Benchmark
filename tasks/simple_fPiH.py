@@ -131,16 +131,10 @@ class SimpleFragilePiH(BaseEnv):
     
         gpp = self.box_hole_pose.p
         pp = self.peg_head_pose.p # self.peg.pose.p
-        #print(f"goal:{gpp}\tpeg:{pp}\t{gpp-pp}")
         inserted = torch.abs(gpp[:,0]-pp[:,0]) <= self._clearance
-        #print("x:", inserted)
         inserted = torch.logical_and(inserted, torch.abs(gpp[:,1]-pp[:,1]) < self._clearance)
-        #print("y:", torch.abs(gpp[:,1]-pp[:,1]) < self._clearance)
         inserted = torch.logical_and(inserted, torch.abs(gpp[:,2]-pp[:,2]) < 0.005)
-        #print("z:", torch.abs(gpp[:,2]-pp[:,2]) < 0.005)
-        dist = torch.linalg.norm(gpp - pp, axis=1)
-        #print('Inserted:', inserted, '\tdist:', dist)
-        return inserted # dist < .005
+        return inserted 
     """
     def has_peg_inserted(self):
         # Only head position is used in fact
@@ -349,9 +343,7 @@ class SimpleFragilePiH(BaseEnv):
         #out_dic['fail'] = torch.logical_or(~self.agent.is_grasping(self.peg), out_dic['fail'])
         self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
         out_dic['max_dmg_force'] = self.max_peg_force
-        #print(out_dic['success'].size(), out_dic['fail'].size())
         out_dic['success'] *= ~out_dic['fail']
-        #print('suc:', out_dic['success'])
         #self.termed[torch.logical_or(out_dic['fail'], out_dic['success'])] = True
         return out_dic
 
@@ -422,8 +414,6 @@ class SimpleFragilePiH(BaseEnv):
         """ Calculates the maximum force on the peg and returns it """
         max_forces = torch.zeros((self.num_envs), device=self.device)
         resp_actor = torch.zeros((self.num_envs), device=self.device)
-        #print(f"Net Peg forces: {torch.linalg.norm(self.peg.get_net_contact_forces())}")
-        #print(f"Net Box: {self.box.get_net_contact_forces()}")
         for i, obs in enumerate(self.obsticles):
             obs_forces = self.getPegForce(obs)
             update = obs_forces > max_forces
