@@ -360,37 +360,10 @@ class SimpleFragilePiH(BaseEnv):
             total max reward: 2
         """
         is_grasped = self.agent.is_grasping(self.peg, max_angle=20)
-        # pre-insertion award, encouraging both the peg center and the peg head to match the yz coordinates of goal_pose
-        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
-        peg_head_wrt_goal_yz_dist = torch.linalg.norm(
-            peg_head_wrt_goal.p[:, 1:], axis=1
-        )
-        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
-        peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
+        
+        dist = torch.linalg.norm(self.goal_pose.p - self.peg.pose.p, axis=1)
 
-        pre_insertion_reward = (
-            1
-            - torch.tanh(
-                0.5 * (peg_head_wrt_goal_yz_dist + peg_wrt_goal_yz_dist)
-                + 4.5 * torch.maximum(peg_head_wrt_goal_yz_dist, peg_wrt_goal_yz_dist)
-            )
-        )
-        reward = pre_insertion_reward * is_grasped
-        # stage 3 passes if peg is correctly oriented in order to insert into hole easily
-        pre_inserted = (peg_head_wrt_goal_yz_dist < 0.01) & (
-            peg_wrt_goal_yz_dist < 0.01
-        )
-
-        # Stage 4: Insert the peg into the hole once it is grasped and lined up
-        peg_head_wrt_goal_inside_hole = self.box_hole_pose.inv() * self.peg_head_pose
-        insertion_reward = (
-            1
-            - torch.tanh(
-                5.0 * torch.linalg.norm(peg_head_wrt_goal_inside_hole.p, axis=1)
-            )
-        )
-        reward += insertion_reward * (is_grasped & pre_inserted)
-
+        reward =  1 - torch.tanh(5 * dist)
         reward[info["success"]] = self.max_reward
 
         return reward
