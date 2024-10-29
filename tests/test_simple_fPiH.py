@@ -72,14 +72,14 @@ class TestFPiH(unittest.TestCase):
         """
         assert(1==1)
         
-        self.get_env()
+        self.get_env(reward_mode='normalized_dense')
         uw = self.envs.unwrapped
         for i in range(1):
             self.envs.reset(options={"reconfigure":True})
             while True:
-                #self.envs.step(self.envs.unwrapped.action_space.sample()*0)
+                x = self.envs.step(self.envs.unwrapped.action_space.sample()*0)
                 self.envs.render_human()
-                print(self.envs.unwrapped.agent.is_grasping(self.envs.unwrapped.peg))
+                print(x)
                 #print(uw.agent.tcp.pose)
                 time.sleep(0.01)
             #for k in range(2):
