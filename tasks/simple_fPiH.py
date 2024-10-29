@@ -367,7 +367,7 @@ class SimpleFragilePiH(BaseEnv):
         
         dist = torch.linalg.norm(self.goal_pose.p - self.peg.pose.p, axis=1)
 
-        reward =  1 - torch.tanh(5 * dist)
+        reward =  1 - torch.tanh(5 * dist) - (1 - is_grasped)
         reward[info["success"]] = self.max_reward
 
         return reward
