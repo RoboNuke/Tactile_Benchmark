@@ -325,7 +325,7 @@ class SimpleFragilePiH(BaseEnv):
         success = self.has_peg_inserted()
         out_dic = dict(success=success)
         out_dic['fail'], out_dic['dmg_force'], out_dic['fail_cause'] = self.pegBroke()
-        out_dic['fail'] = torch.logical_or(~self.agent.is_grasping(self.peg), out_dic['fail'])
+        #out_dic['fail'] = torch.logical_or(~self.agent.is_grasping(self.peg), out_dic['fail'])
         self.max_peg_force = torch.maximum(out_dic['dmg_force'], self.max_peg_force)
         out_dic['max_dmg_force'] = self.max_peg_force
         #print(out_dic['success'].size(), out_dic['fail'].size())
