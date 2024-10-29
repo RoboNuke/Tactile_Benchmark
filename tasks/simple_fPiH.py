@@ -234,12 +234,12 @@ class SimpleFragilePiH(BaseEnv):
                 inner_radius, outer_radius, depth = (
                     radius + clearance,
                     length,
-                    length/3.0,
+                    length,
                 )
                 builder = _build_box_with_hole(
                     self.scene, inner_radius, outer_radius, depth, center=centers[i].cpu().numpy()
                 )
-                builder.initial_pose = sapien.Pose(p=[0, 1, 0.1])
+                builder.initial_pose = sapien.Pose(p=[0, 1, length/2.0])
                 builder.set_scene_idxs(scene_idxs)
                 box = builder.build_kinematic(f"box_with_hole_{i}")
 
@@ -282,7 +282,7 @@ class SimpleFragilePiH(BaseEnv):
             pos = torch.zeros((b, 3))
             pos[:, 0] = r * torch.cos(theta)
             pos[:,1] = r * torch.sin(theta)
-            pos[:, 2] = self.peg_half_sizes[env_idx, 0]
+            pos[:, 2] = self.peg_half_sizes[env_idx, 1]
             quat = [0.0,0.707,0.0,0.707]
             self.box.set_pose(Pose.create_from_pq(pos, quat))
 
