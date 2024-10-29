@@ -60,16 +60,16 @@ class TestFPiH(unittest.TestCase):
             seed = reset_kwargs.pop("seed")
             self.envs.reset(seed=seed, **reset_kwargs)
     
-    """
+    
     # not required as we stole the config from mani skill
     def test_reconfig(self):
-        
+        """
             Re-loads the scene and 
             checks 
             - hole block location in range
             - hole size is in range
             - peg size
-        
+        """
         assert(1==1)
         
         self.get_env()
@@ -77,7 +77,7 @@ class TestFPiH(unittest.TestCase):
         for i in range(1):
             self.envs.reset(options={"reconfigure":True})
             while True:
-                self.envs.step(self.envs.unwrapped.action_space.sample()*0)
+                #self.envs.step(self.envs.unwrapped.action_space.sample()*0)
                 self.envs.render_human()
                 print(self.envs.unwrapped.agent.is_grasping(self.envs.unwrapped.peg))
                 #print(uw.agent.tcp.pose)
@@ -86,7 +86,7 @@ class TestFPiH(unittest.TestCase):
             #    self.envs.step(None)
             #    #self.envs.render_human()
             #    time.sleep(0.01)
-    """
+    
 
     def test_scene_init(self):
         """

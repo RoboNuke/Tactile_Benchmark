@@ -294,7 +294,7 @@ class SimpleFragilePiH(BaseEnv):
                     0,
                     -np.pi * 4 / 8,
                     0,
-                    np.pi * 3 / 4,
+                    np.pi * 3 / 4, 
                     -np.pi / 4,
                     0.04,
                     0.04,
@@ -311,7 +311,11 @@ class SimpleFragilePiH(BaseEnv):
             self.scene._gpu_fetch_all()
             
             self.agent.robot.set_pose(sapien.Pose([-0.615, 0, 0]))
-            self.peg.set_pose(self.agent.tcp.pose[env_idx,:])
+            self.peg.set_pose(
+                self.agent.tcp.pose[env_idx,:] *
+                sapien.Pose([0.0,0,-0.03], [0.0,-0.707,0.0,0.707]) *
+                self.peg_head_offsets[env_idx,:].inv() 
+            )
 
     def evaluate(self):
         """
