@@ -385,8 +385,9 @@ class SimpleFragilePiH(BaseEnv):
             axis = 1
         )
 
-        reward = 1 - torch.tanh(5 * dist_tcp)
-
+        reward = (1 - torch.tanh(5 * dist_tcp)) * is_grasped
+        reward[info["success"]] = 1.0
+        return reward
         # this reward encourage holding onto the peg and 
         # keeping the peg aligned vertically
         dist_xy = torch.linalg.norm(
@@ -410,6 +411,11 @@ class SimpleFragilePiH(BaseEnv):
 
         # finally reward it for pushing it down
         pre_inserted = torch.logical_and(dist_xy < 0.01, dist2_xy < 0.01)
+        # make sure that the peg is pointed down
+        pre_inserted = torch.logical_and(
+            pre_inserted, 
+            self.peg.pose.p[:,2] > self.peg_head_pos[:,2]
+        )
         #dist = torch.linalg.norm(
         #    self.box_hole_pose.p - self.peg_head_pose.p, 
         #    axis=1
@@ -426,7 +432,7 @@ class SimpleFragilePiH(BaseEnv):
             obs: Any, 
             action: torch.Tensor, 
             info: Dict):
-        return self.compute_dense_reward(obs, action, info)/10.0
+        return self.compute_dense_reward(obs, action, info)
     
     def over_box(self):
         bp = self.box.pose.p
