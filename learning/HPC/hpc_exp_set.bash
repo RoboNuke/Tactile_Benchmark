@@ -1,7 +1,7 @@
 task="SimpleFragilePiH-v1"
 #task="FragilePegInsert-v1"
 #task="ForeignObjectRemoval-v1"
-num_steps=50
+num_steps=150
 total_timesteps=50000000
 
 obs_types=("state_dict_no_ft") # "state_dict") # "rgb" "rgb_no_ft")
@@ -35,7 +35,7 @@ for control_mode in ${control_modes[@]}; do
                     else
                         dmg_code=$dmg_val
                     fi
-		                exp_name="NewRew2" # "Base_SFPiH_(${f_code})_($dmg_code)"
+		                exp_name="NewRew50" # "Base_SFPiH_(${f_code})_($dmg_code)"
                         
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
