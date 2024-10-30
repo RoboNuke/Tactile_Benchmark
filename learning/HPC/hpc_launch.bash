@@ -42,6 +42,7 @@ critic_n=${12}
 critic_l=${13}
 use_shampoo=${14}
 lock_gripper=${15}
+ent_co=${16}
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
@@ -132,7 +133,8 @@ do
         --critic_n=$critic_n \
         --critic_hidden_layer_size=$critic_l \
         --$use_shampoo \
-        --$lock_gripper
+        --$lock_gripper \
+        --ent-coef=$ent_co
 done
 
 

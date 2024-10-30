@@ -381,19 +381,12 @@ class SimpleFragilePiH(BaseEnv):
         #is_over_box = self.over_box()
         # reach reward (if robot drops peg still gets a reward signal)
         dist_tcp = torch.linalg.norm(
-            self.box_hole_pose.p[:,:3] - self.peg_head_pos, #self.agent.tcp.pose.p[:,:2],
+            self.box_hole_pose.p[:,:2] - self.agent.tcp.pose.p[:,:2],
             axis = 1
         )
 
-        dist_vert = torch.linalg.norm(
-            self.peg.pose.p[:,:2] - self.peg_head_pos[:,:2],
-            axis=1
-        )
-
         reward = (1 - torch.tanh(5 * dist_tcp)) * is_grasped
-        reward -= torch.tanh(50 * dist_vert)
-        reward[info["success"]] = 1.0
-        return reward
+
         # this reward encourage holding onto the peg and 
         # keeping the peg aligned vertically
         dist_xy = torch.linalg.norm(
