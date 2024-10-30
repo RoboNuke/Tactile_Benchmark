@@ -133,7 +133,7 @@ class SimpleFragilePiH(BaseEnv):
         pp = self.peg_head_pose.p # self.peg.pose.p
         inserted = torch.abs(gpp[:,0]-pp[:,0]) <= self._clearance
         inserted = torch.logical_and(inserted, torch.abs(gpp[:,1]-pp[:,1]) < self._clearance)
-        inserted = torch.logical_and(inserted, torch.abs(gpp[:,2]-pp[:,2]) < self._clearance)
+        inserted = torch.logical_and(inserted, pp[:,2] < self.box.pose.p[:,2]) # inserted half way
         return inserted 
     """
     def has_peg_inserted(self):
@@ -410,11 +410,12 @@ class SimpleFragilePiH(BaseEnv):
 
         # finally reward it for pushing it down
         pre_inserted = torch.logical_and(dist_xy < 0.01, dist2_xy < 0.01)
-        dist = torch.linalg.norm(
-            self.box_hole_pose.p - self.peg_head_pose.p, 
-            axis=1
-        )
-        #dist = self.peg_head_pose.p[:,2] 
+        #dist = torch.linalg.norm(
+        #    self.box_hole_pose.p - self.peg_head_pose.p, 
+        #    axis=1
+        #)
+        dist = self.peg_head_pose.p[:,2] 
+        #print(f"r:{5 * (1 - torch.tanh(5*dist))}\tz-dist:{dist}\tpi:{pre_inserted}")
         reward += 5 * (1 - torch.tanh(5*dist)) * pre_inserted
 
         reward[info["success"]] = 10.0
