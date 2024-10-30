@@ -2,7 +2,7 @@ task="SimpleFragilePiH-v1"
 #task="FragilePegInsert-v1"
 #task="ForeignObjectRemoval-v1"
 num_steps=150
-total_timesteps=50000000
+total_timesteps=30000000
 
 obs_types=("state_dict_no_ft") # "state_dict") # "rgb" "rgb_no_ft")
 dmg_vals=("100000.0") # "50.0" "100.0" "250.0" "500.0" ) 
@@ -16,7 +16,7 @@ critic_l=("512")
 use_shampoo=0
 lock_gripper=1
 
-ent_coeffs=("0.00001" "0.000005" "0.000001" "0.0000005" "0.0000001")
+ent_coeffs=("0.00005" "0.0001") #("0.00001" "0.000005")
 
 tmux new-session -d -s "Holder"
 for control_mode in ${control_modes[@]}; do

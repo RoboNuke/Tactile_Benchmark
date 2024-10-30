@@ -431,7 +431,7 @@ class SimpleFragilePiH(BaseEnv):
             obs: Any, 
             action: torch.Tensor, 
             info: Dict):
-        return self.compute_dense_reward(obs, action, info)
+        return self.compute_dense_reward(obs, action, info)/10.0
     
     def over_box(self):
         bp = self.box.pose.p
