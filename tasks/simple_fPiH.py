@@ -111,7 +111,7 @@ class SimpleFragilePiH(BaseEnv):
     # save some commonly used attributes
     @property
     def peg_head_pos(self):
-        return self.peg.pose.p + self.peg_head_offsets.p
+        return self.peg.pose.p + self.peg_head_offsets.inv().p
 
     @property
     def peg_head_pose(self):
@@ -378,12 +378,45 @@ class SimpleFragilePiH(BaseEnv):
             total max reward: 1
         """
         is_grasped = self.agent.is_grasping(self.peg)
-        is_over_box = self.over_box()
-        
-        dist = torch.linalg.norm(self.box_hole_pose.p - self.peg_head_pose.p, axis=1)
+        #is_over_box = self.over_box()
+        # reach reward (if robot drops peg still gets a reward signal)
+        dist_tcp = torch.linalg.norm(
+            self.box_hole_pose.p[:,:2] - self.agent.tcp.pose.p[:,:2],
+            axis = 1
+        )
 
-        reward =  (1 - torch.tanh(5 * dist) - (~is_grasped)*1.0) * is_over_box
-        reward[info["success"]] = self.max_reward
+        reward = 1 - torch.tanh(5 * dist_tcp)
+
+        # this reward encourage holding onto the peg and 
+        # keeping the peg aligned vertically
+        dist_xy = torch.linalg.norm(
+            self.box_hole_pose.p[:,:2] - self.peg_head_pose.p[:,:2], 
+            axis=1
+        )
+
+        dist2_xy = torch.linalg.norm(
+            self.box_hole_pose.p[:,:2] - self.peg.pose.p[:,:2],
+            axis=1
+        )
+
+        pre_insert_reward = 4 * (
+            1 - torch.tanh(
+                0.5 * (dist2_xy + dist_xy) + 
+                4.5 * torch.maximum(dist2_xy, dist_xy)
+            )
+        )
+
+        reward += pre_insert_reward * is_grasped 
+
+        # finally reward it for pushing it down
+        pre_inserted = torch.logical_and(dist_xy < 0.01, dist2_xy < 0.01)
+        dist = torch.linalg.norm(
+            self.box_hole_pose.p - self.peg_head_pose.p, 
+            axis=1
+        )
+        reward += 5 * (1 - torch.tanh(5*dist)) * pre_inserted
+
+        reward[info["success"]] = 10.0
         #print(f"g:{is_grasped}\to:{is_over_box}\td:{dist}\tr:{reward}")
         return reward
     
@@ -391,7 +424,7 @@ class SimpleFragilePiH(BaseEnv):
             obs: Any, 
             action: torch.Tensor, 
             info: Dict):
-        return self.compute_dense_reward(obs, action, info)
+        return self.compute_dense_reward(obs, action, info)/10.0
     
     def over_box(self):
         bp = self.box.pose.p
