@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=1-2             # set up the array
+#SBATCH --array=1-4             # set up the array
 #SBATCH -J ent2_FPiH			    # name of job
 #SBATCH -A virl-grp	            # name of my sponsored account, e.g. class or research group, NOT ONID!
 #SBATCH -p dgx2				# name of partition or queue
