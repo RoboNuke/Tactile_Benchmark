@@ -35,7 +35,7 @@ for control_mode in ${control_modes[@]}; do
                     else
                         dmg_code=$dmg_val
                     fi
-		                exp_name="NewRew" # "Base_SFPiH_(${f_code})_($dmg_code)"
+		                exp_name="NewRew2" # "Base_SFPiH_(${f_code})_($dmg_code)"
                         
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
