@@ -111,9 +111,9 @@ class Args:
     """the number of parallel evaluation environments"""
     partial_reset: bool = True
     """whether to let parallel environments reset upon termination instead of truncation"""
-    num_steps: int = 150
+    num_steps: int = 50
     """the number of steps to run in each environment per policy rollout"""
-    num_eval_steps: int = 150
+    num_eval_steps: int = 50
     """the number of steps to run in each evaluation environment during evaluation"""
     reconfiguration_freq: Optional[int] = 1
     """for benchmarking purposes we want to reconfigure the eval environment each reset to ensure objects are randomized in some tasks"""
@@ -133,7 +133,7 @@ class Args:
     """the surrogate clipping coefficient"""
     clip_vloss: bool = False
     """Toggles whether or not to use a clipped loss for the value function, as per the paper."""
-    ent_coef: float = 0.005
+    ent_coef: float = 0.0
     """coefficient of the entropy"""
     vf_coef: float = 0.5
     """coefficient of the value function"""
