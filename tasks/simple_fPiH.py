@@ -411,10 +411,10 @@ class SimpleFragilePiH(BaseEnv):
         # finally reward it for pushing it down
         pre_inserted = torch.logical_and(dist_xy < 0.01, dist2_xy < 0.01)
         # make sure that the peg is pointed down
-        pre_inserted = torch.logical_and(
-            pre_inserted, 
-            self.peg.pose.p[:,2] < self.peg_head_pos[:,2]
-        )
+        #pre_inserted = torch.logical_and(
+        #    pre_inserted, 
+        #    self.peg.pose.p[:,2] < self.peg_head_pos[:,2]
+        #)
         #dist = torch.linalg.norm(
         #    self.box_hole_pose.p - self.peg_head_pose.p, 
         #    axis=1
