@@ -3,7 +3,8 @@ SESSION_NAME="Baseline_Testing"
 #NUM_WINDOWS=5
 gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_launch.bash"
 tmux new-session -d -s "$SESSION_NAME"
-
+s=$1
+f=$2
 shift 2
 for i in $(seq $1 $2); do
     tmux new-window -t "$SESSION_NAME":$i -n "Window $i"
