@@ -43,7 +43,7 @@ critic_l=${13}
 use_shampoo=${14}
 lock_gripper=${15}
 ent_co=${16}
-lr=${17}
+#lr=${17}
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
