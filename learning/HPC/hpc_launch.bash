@@ -6,8 +6,8 @@ save_model=1
 capture_video=1
 
 # create folder for this round of experiments
-gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
-
+#gpu_path="/nfs/stak/users/brownhun/hpc-share/Tactile_Benchmark/learning/HPC/hpc_ppo.py"
+gpu_path="learning.HPC.hpc_ppo"
 
 # shared learning data
 #env_id="PegInsertionSide-v1"
@@ -44,6 +44,8 @@ use_shampoo=${14}
 lock_gripper=${15}
 ent_co=${16}
 lr=${17}
+
+#echo $start $end $env_id $obs_mode $dmg_force
 
 if [[ $obs_mode == *"no_ft"* ]]; then
     include_force=0
@@ -106,7 +108,8 @@ do
     #printf "\n\n\n\nStarting baseline exp ${i}\n\n\n\n"
     #exp_name = "pickcube_state_baseline_" + $i
     exp_name="${exp_set_name}_${i}" #_${date}"
-    python $gpu_path \
+    
+    python -m $gpu_path \
         --wandb-project-name=$wandb_project_name \
         --wandb-entity=$wandb_entity \
         --$save_model \

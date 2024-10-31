@@ -41,7 +41,7 @@ for control_mode in ${control_modes[@]}; do
                     #for ent_co in ${ent_coeffs[@]}; do
                     #for lr in ${lrs[@]}; do
 
-		                exp_name="SFPiH_(${f_code})_(${dmg_code})_(${force_encoding})"
+		                exp_name="SFPiH_${f_code}_${dmg_code}_${force_encoding}"
                         
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
@@ -58,9 +58,10 @@ for control_mode in ${control_modes[@]}; do
                             $use_shampoo \
                             $lock_gripper \
                             $ent_co \
-                            $lr \
-                            -J $exp_name
+                            $lr #\
+                            #-J $exp_name
                             # ${critic_l[0]} 
+                        exit
 		            #done	
                 done
             done

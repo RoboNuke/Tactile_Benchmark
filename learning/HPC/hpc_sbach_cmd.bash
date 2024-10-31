@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --array=1-2             # set up the array
-##SBATCH -J SFPiH			    # name of job
+#SBATCH -J SFPiH			    # name of job
 #SBATCH -A virl-grp	            # name of my sponsored account, e.g. class or research group, NOT ONID!
 #SBATCH -p dgx2				# name of partition or queue
 #SBATCH --time=0-24:00:00        # time limit on job: 2 days, 12 hours, 30 minutes (default 12 hours)
