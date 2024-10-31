@@ -61,10 +61,10 @@ class TestNForce(unittest.TestCase):
             obs, _, _, _, _ = self.envs.step(None)
 
         data = obs['extra']['force']
-        assert data.size() == (2,5,3), f"Force tensor size is {data.size()}, but should be (2,5,3)"
+        assert data.size() == (2,5*3), f"Force tensor size is {data.size()}, but should be (2,5,3)"
         
         for i in range(5):
-            assert torch.all( data[:,4-i,:] == i+1 ), f'{data[:,4-i,:]} should all be {i+1}'
+            assert torch.all( data[:,3*i:3*(1+i)] == 5-i ), f'{data[:,3*i:3*(1+i)]} should all be {i+1}'
 
     def test_handle_force(self):
         # Checks that it handles force in obs

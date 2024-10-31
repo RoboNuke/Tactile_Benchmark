@@ -53,7 +53,6 @@ class FlattenRGBDFTObservationWrapper(gym.ObservationWrapper):
         if 'force' in observation['extra']:
             force = observation['extra'].pop('force')
         observation = common.flatten_state_dict(observation, use_torch=True)
-
         if self.include_state:
             ret["state"] = observation
         if self.include_force:
@@ -74,6 +73,9 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
 class NatureCNN(nn.Module):
     def __init__(self, sample_obs, force_type="FFN"):#, nn.ReLU=nn.ReLU):
         super().__init__()
+
+        if "-step" in force_type:
+            force_type="FFN"
 
         extractors = {}
         self.out_features = 0

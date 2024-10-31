@@ -39,6 +39,7 @@ from tasks.simple_fPiH import *
 from tasks.for_env import *
 from wrappers.smoothness_obs_wrapper import SmoothnessObservationWrapper
 from wrappers.closed_gripper import *
+from wrappers.n_force_wrapper import *
 
 @dataclass
 class Args:
@@ -133,7 +134,7 @@ class Args:
     """the surrogate clipping coefficient"""
     clip_vloss: bool = False
     """Toggles whether or not to use a clipped loss for the value function, as per the paper."""
-    ent_coef: float = 0.00001
+    ent_coef: float = 0.000005
     """coefficient of the entropy"""
     vf_coef: float = 0.5
     """coefficient of the value function"""
@@ -322,6 +323,15 @@ if __name__ == "__main__":
         envs = CloseGripperActionSpaceWrapper(envs)
         eval_envs = CloseGripperActionSpaceWrapper(eval_envs)
 
+    if "-step" in args.force_encoding:
+        n = int(args.force_encoding[:-5])
+
+        test_obs, _ = envs.reset(seed=args.seed)
+        envs = NForceWrapper(envs, n, test_obs)
+        test_obs, _ = eval_envs.reset(seed=args.seed)
+        eval_envs = NForceWrapper(eval_envs, n, test_obs)
+
+
     if args.capture_video:
         
         if args.evaluate:
@@ -377,7 +387,7 @@ if __name__ == "__main__":
     global_step = 0
     start_time = time.time()
     next_obs, _ = envs.reset(seed=args.seed)
-    print(next_obs['state'].size())
+    #print(next_obs['state'].size())
     eval_obs, _ = eval_envs.reset()#seed=args.seed)
     next_done = torch.zeros(args.num_envs, device=device)
     eps_returns = torch.zeros(args.num_envs, dtype=torch.float, device=device)
