@@ -135,8 +135,8 @@ do
         --critic_hidden_layer_size=$critic_l \
         --$use_shampoo \
         --$lock_gripper \
-        --ent-coef=$ent_co \
-        --learning-rate=$lr
+        --ent-coef=$ent_co #\
+        #--learning-rate=$lr
 done
 
 

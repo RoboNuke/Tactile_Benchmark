@@ -16,9 +16,9 @@ critic_l=("512")
 use_shampoo=0
 lock_gripper=1
 
-#ent_coeffs=("0.0001" "0.00005" "0.00001" "0.000005")
-ent_co="0.0"
-lrs=("0.0003" "0.003" "0.03")
+ent_coeffs=("0.0001" "0.00005" "0.00001" "0.000005")
+#ent_co="0.0"
+#lrs=("0.0003" "0.003" "0.03")
 
 tmux new-session -d -s "Holder"
 for control_mode in ${control_modes[@]}; do
@@ -39,10 +39,10 @@ for control_mode in ${control_modes[@]}; do
                     else
                         dmg_code=$dmg_val
                     fi
-                    #for ent_co in ${ent_coeffs[@]}; do
-                    for lr in ${lrs[@]}; do
+                    for ent_co in ${ent_coeffs[@]}; do
+                    #for lr in ${lrs[@]}; do
 
-		                exp_name="LRTest_(${lr})" # "Base_SFPiH_(${f_code})_($dmg_code)"
+		                exp_name="EntTest_(${ent_co})" # "Base_SFPiH_(${f_code})_($dmg_code)"
                         
                         sbatch learning/HPC/hpc_sbach_cmd.bash \
                             $task \
@@ -58,8 +58,8 @@ for control_mode in ${control_modes[@]}; do
                             "512" \
                             $use_shampoo \
                             $lock_gripper \
-                            $ent_co \
-                            $lr
+                            $ent_co #\
+                            #$lr
                             # ${critic_l[0]} 
 		            done	
                 done
