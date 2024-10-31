@@ -8,8 +8,8 @@
 #SBATCH --gres=gpu:1            # number of GPUs to request (default 0)
 #SBATCH --mem=16G               # request 10 gigabytes memory (per node, default depends on node)
 #SBATCH -c 2                    # number of cores/threads per task (default 1)
-#SBATCH -o ../outs/EntTest_%A_%a.out		# name of output file for this submission script
-#SBATCH -e ../outs/EntTest_%A_%a.err		# name of error file for this submission script
+#SBATCH -o ../outs/LRTest_%A_%a.out		# name of output file for this submission script
+#SBATCH -e ../outs/LRTest_%A_%a.err		# name of error file for this submission script
 # load any software environment module required for app (e.g. matlab, gcc, cuda)
 
 
