@@ -61,7 +61,7 @@ for control_mode in ${control_modes[@]}; do
                             $lr #\
                             #-J $exp_name
                             # ${critic_l[0]} 
-                        exit
+                        
 		            #done	
                 done
             done
